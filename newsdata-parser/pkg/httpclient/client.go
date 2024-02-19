@@ -51,3 +51,27 @@ func (c *Client) Send(method string, url string, body io.Reader, headers map[str
 
 	return resp, nil
 }
+
+func (c *Client) Get(url string, headers map[string]string) (*http.Response, error) {
+	return c.Send(http.MethodGet, url, nil, headers)
+}
+
+func (c *Client) Head(url string, headers map[string]string) (*http.Response, error) {
+	return c.Send(http.MethodHead, url, nil, headers)
+}
+
+func (c *Client) Delete(url string, headers map[string]string) (*http.Response, error) {
+	return c.Send(http.MethodDelete, url, nil, headers)
+}
+
+func (c *Client) Post(url string, body io.Reader, headers map[string]string) (*http.Response, error) {
+	return c.Send(http.MethodPost, url, body, headers)
+}
+
+func (c *Client) Put(url string, body io.Reader, headers map[string]string) (*http.Response, error) {
+	return c.Send(http.MethodPut, url, body, headers)
+}
+
+func (c *Client) Patch(url string, body io.Reader, headers map[string]string) (*http.Response, error) {
+	return c.Send(http.MethodPatch, url, body, headers)
+}
