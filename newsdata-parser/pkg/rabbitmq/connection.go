@@ -19,8 +19,13 @@ type Connection struct {
 	ch   *amqp.Channel
 }
 
-func NewConnection(cfg ConnectionConfig) *Connection {
-	return &Connection{ConnectionConfig: cfg}
+func NewConnection(cfg ConnectionConfig) (*Connection, error) {
+	_, err := amqp.ParseURI(cfg.URL)
+	if err != nil {
+		return nil, fmt.Errorf("amqp.ParseURI: %w", err)
+	}
+
+	return &Connection{ConnectionConfig: cfg}, nil
 }
 
 func (c *Connection) Open() error {
@@ -57,14 +62,19 @@ func (c *Connection) attemptOpen() error {
 }
 
 func (c *Connection) Close() error {
-	err := c.ch.Close()
-	if err != nil {
-		return fmt.Errorf("c.ch.Close: %w", err)
+	var err error
+	if c.ch != nil {
+		err = c.ch.Close()
+		if err != nil {
+			return fmt.Errorf("c.ch.Close: %w", err)
+		}
 	}
 
-	err = c.conn.Close()
-	if err != nil {
-		return fmt.Errorf("c.conn.Close: %w", err)
+	if c.conn != nil {
+		err := c.conn.Close()
+		if err != nil {
+			return fmt.Errorf("c.conn.Close: %w", err)
+		}
 	}
 
 	return nil
