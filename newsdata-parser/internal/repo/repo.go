@@ -9,3 +9,7 @@ type News interface {
 	Pop(ctx context.Context) (string, error)
 	PopAll(ctx context.Context) ([]string, error)
 }
+
+type Page interface {
+	Update(ctx context.Context, value string) error
+}

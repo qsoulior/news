@@ -1,5 +1,6 @@
 package service
 
 type News interface {
-	Parse(query string) error
+	ParsePage(page string) error
+	ParseQuery(query string) error
 }
