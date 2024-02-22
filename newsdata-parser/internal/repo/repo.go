@@ -1,8 +1,11 @@
 package repo
 
-import "context"
+import (
+	"context"
+)
 
 type News interface {
-	Create(ctx context.Context, key string, value string) error
-	Get(ctx context.Context, key string) error
+	Create(ctx context.Context, jsonStr string) error
+	Pop(ctx context.Context) (string, error)
+	PopAll(ctx context.Context) ([]string, error)
 }
