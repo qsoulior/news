@@ -18,15 +18,15 @@ type WorkerConfig struct {
 	}
 }
 
-type Worker struct {
+type worker struct {
 	WorkerConfig
 }
 
-func NewWorker(cfg WorkerConfig) *Worker {
-	return &Worker{cfg}
+func NewWorker(cfg WorkerConfig) *worker {
+	return &worker{cfg}
 }
 
-func (w *Worker) Run() error {
+func (w *worker) Run() error {
 	var delay time.Duration = 0
 	page, err := w.Services.Page.Get()
 	if !errors.Is(err, service.ErrNotExist) {
