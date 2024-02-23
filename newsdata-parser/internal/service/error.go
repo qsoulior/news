@@ -3,6 +3,8 @@ package service
 import (
 	"errors"
 	"fmt"
+
+	"github.com/qsoulior/news/newsdata-parser/internal/repo"
 )
 
 var (
@@ -10,6 +12,7 @@ var (
 	ErrRequestInvalid = errors.New("request is invalid")
 	ErrInternalServer = errors.New("API internal error")
 	ErrUnexpectedCode = errors.New("http code is unexcepted")
+	ErrNotExist       = repo.ErrNotExist
 )
 
 type ResponseError struct {

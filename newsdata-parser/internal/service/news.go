@@ -79,10 +79,7 @@ type NewsConfig struct {
 		Exchange   string
 		RoutingKey string
 	}
-	Repo struct {
-		News repo.News
-		Page repo.Page
-	}
+	repo repo.News
 }
 
 func NewNews(cfg NewsConfig) News {
@@ -99,21 +96,18 @@ func NewNews(cfg NewsConfig) News {
 	}
 }
 
-func (n *news) ParsePage(page string) error {
+func (n *news) ParsePage(page string) (string, error) {
 	values := make(url.Values)
-	values.Set("page", page)
+	if page != "" {
+		values.Set("page", page)
+	}
 
 	nextPage, err := n.parse(values)
 	if err != nil {
-		return fmt.Errorf("n.parse: %w", err)
+		return "", fmt.Errorf("n.parse: %w", err)
 	}
 
-	err = n.Repo.Page.Update(context.Background(), nextPage)
-	if err != nil {
-		return fmt.Errorf("n.Repo.Page.Update: %w", err)
-	}
-
-	return nil
+	return nextPage, nil
 }
 
 func (n *news) ParseQuery(query string) error {
@@ -157,7 +151,7 @@ func (n *news) parse(values url.Values) (string, error) {
 			})
 			if err != nil {
 				// TODO: amqp.Produce error handling
-				err := n.Repo.News.Create(context.Background(), string(body))
+				err := n.repo.Create(context.Background(), string(body))
 				if err != nil {
 					return "", fmt.Errorf("n.Repo.News.Create: %w", err)
 				}
