@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -50,11 +51,19 @@ func (dto *NewsDTO) Entity() *entity.News {
 	return entity
 }
 
-type NewsResponse struct {
+type NewsResponseSuccess struct {
 	Status       string    `json:"status"`
 	TotalResults int       `json:"totalResults"`
 	Results      []NewsDTO `json:"results"`
 	NextPage     string    `json:"nextPage"`
+}
+
+type NewsResponseError struct {
+	Status  string `json:"status"`
+	Results struct {
+		Message string `json:"message"`
+		Code    string `json:"code"`
+	} `json:"results"`
 }
 
 type news struct {
@@ -128,32 +137,47 @@ func (n *news) parse(values url.Values) (string, error) {
 		return "", fmt.Errorf("n.client.Get: %w", err)
 	}
 
-	data, err := httpresponse.JSON[NewsResponse](resp)
-	if err != nil {
-		return "", fmt.Errorf("httpresponse.JSON: %w", err)
-	}
-
-	for _, result := range data.Results {
-		body, err := json.Marshal(result.Entity())
+	switch resp.StatusCode {
+	case http.StatusOK:
+		data, err := httpresponse.JSON[NewsResponseSuccess](resp)
 		if err != nil {
-			return "", fmt.Errorf("json.Marshal: %w", err)
+			return "", fmt.Errorf("httpresponse.JSON: %w", err)
 		}
 
-		err = n.AMQP.Producer.Produce(n.AMQP.Exchange, n.AMQP.RoutingKey, amqp091.Publishing{
-			ContentType:  "application/json",
-			DeliveryMode: 2,
-			Body:         body,
-		})
-		if err != nil {
-			// TODO: amqp.Produce error handling
-			err := n.Repo.News.Create(context.Background(), string(body))
+		for _, result := range data.Results {
+			body, err := json.Marshal(result.Entity())
 			if err != nil {
-				return "", fmt.Errorf("n.Repo.News.Create: %w", err)
+				return "", fmt.Errorf("json.Marshal: %w", err)
 			}
 
-			return "", fmt.Errorf("n.amqp.Produce: %w", err)
+			err = n.AMQP.Producer.Produce(n.AMQP.Exchange, n.AMQP.RoutingKey, amqp091.Publishing{
+				ContentType:  "application/json",
+				DeliveryMode: 2,
+				Body:         body,
+			})
+			if err != nil {
+				// TODO: amqp.Produce error handling
+				err := n.Repo.News.Create(context.Background(), string(body))
+				if err != nil {
+					return "", fmt.Errorf("n.Repo.News.Create: %w", err)
+				}
+
+				return "", fmt.Errorf("n.amqp.Produce: %w", err)
+			}
 		}
+		return data.NextPage, nil
+	case http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusConflict, http.StatusUnsupportedMediaType, http.StatusUnprocessableEntity, http.StatusTooManyRequests:
+		data, err := httpresponse.JSON[NewsResponseError](resp)
+		if err != nil {
+			return "", fmt.Errorf("httpresponse.JSON: %w", err)
+		}
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return "", &ResponseError{ErrRateLimit, data.Results.Code}
+		}
+		return "", &ResponseError{ErrRequestInvalid, data.Results.Code}
+	case http.StatusInternalServerError:
+		return "", ErrInternalServer
 	}
 
-	return data.NextPage, nil
+	return "", ErrUnexpectedCode
 }
