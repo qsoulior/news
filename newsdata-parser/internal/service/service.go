@@ -1,8 +1,7 @@
 package service
 
 type News interface {
-	ParsePage(page string) (string, error)
-	ParseQuery(query string) error
+	Parse(query string, page string) (string, error)
 }
 
 type Page interface {

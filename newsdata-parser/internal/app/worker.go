@@ -37,7 +37,7 @@ func (w *worker) Run() error {
 	for {
 		time.Sleep(delay)
 
-		nextPage, err := w.Services.News.ParsePage(page)
+		nextPage, err := w.Services.News.Parse("", page)
 		if err != nil {
 			w.Logger.Error().Err(err).Msg("")
 			delay *= 2

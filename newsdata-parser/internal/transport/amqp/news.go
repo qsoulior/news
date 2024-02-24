@@ -20,7 +20,7 @@ func NewNews(cfg NewsConfig) *news {
 }
 
 func (n *news) Handle(msg *amqp091.Delivery) {
-	err := n.Service.ParseQuery(string(msg.Body))
+	_, err := n.Service.Parse(string(msg.Body), "")
 	if err != nil {
 		n.Logger.Error().Err(err).Msg("")
 	}
