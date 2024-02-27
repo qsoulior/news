@@ -8,11 +8,11 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/qsoulior/news/newsdata-parser/internal/entity"
+	"github.com/qsoulior/news/aggregator/entity"
+	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
 	"github.com/qsoulior/news/newsdata-parser/internal/repo"
 	"github.com/qsoulior/news/newsdata-parser/pkg/httpclient"
 	"github.com/qsoulior/news/newsdata-parser/pkg/httpclient/httpresponse"
-	"github.com/qsoulior/news/newsdata-parser/pkg/rabbitmq"
 	"github.com/rabbitmq/amqp091-go"
 )
 

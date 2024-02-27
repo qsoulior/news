@@ -3,9 +3,9 @@ package app
 import (
 	"fmt"
 
+	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
 	"github.com/qsoulior/news/newsdata-parser/internal/service"
 	"github.com/qsoulior/news/newsdata-parser/internal/transport/amqp"
-	"github.com/qsoulior/news/newsdata-parser/pkg/rabbitmq"
 	"github.com/rs/zerolog"
 )
 
