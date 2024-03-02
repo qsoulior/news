@@ -23,6 +23,10 @@ type news struct {
 	NewsConfig
 }
 
+func NewNews(cfg NewsConfig) News {
+	return &news{cfg}
+}
+
 func (n *news) Create(news entity.News) error {
 	if err := n.repo.Create(context.Background(), news); err != nil {
 		return fmt.Errorf("n.repo.Create: %w", err)
@@ -48,7 +52,12 @@ func (n *news) GetByID(id string) (*entity.News, error) {
 	return news, nil
 }
 
-func (n *news) GetByQuery(query repo.Query, opts repo.Options) ([]entity.News, error) {
+type (
+	Query   = repo.Query
+	Options = repo.Options
+)
+
+func (n *news) GetByQuery(query Query, opts Options) ([]entity.News, error) {
 	news, err := n.repo.GetByQuery(context.Background(), query, opts)
 	if err != nil {
 		return nil, fmt.Errorf("n.repo.GetByQuery: %w", err)
