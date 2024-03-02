@@ -139,7 +139,7 @@ func (n *news) parseResult(resp *http.Response) (string, error) {
 
 		err = n.AMQP.Producer.Produce(n.AMQP.Exchange, n.AMQP.RoutingKey, amqp091.Publishing{
 			ContentType:  "application/json",
-			DeliveryMode: 2,
+			DeliveryMode: amqp091.Persistent,
 			Body:         body,
 		})
 		if err != nil {
@@ -149,7 +149,7 @@ func (n *news) parseResult(resp *http.Response) (string, error) {
 				return "", fmt.Errorf("n.Repo.News.Create: %w", err)
 			}
 
-			return "", fmt.Errorf("n.amqp.Produce: %w", err)
+			return "", fmt.Errorf("n.AMQP.Producer.Produce: %w", err)
 		}
 	}
 	return data.NextPage, nil
