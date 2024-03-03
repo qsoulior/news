@@ -34,7 +34,7 @@ func (r *Redis) Open(ctx context.Context) error {
 
 	var err error
 	for i := r.AttemptCount; i > 0; i-- {
-		if err := r.Client.Ping(ctx).Err(); err == nil {
+		if err = r.Client.Ping(ctx).Err(); err == nil {
 			return nil
 		}
 

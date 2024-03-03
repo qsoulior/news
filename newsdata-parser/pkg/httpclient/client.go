@@ -8,14 +8,14 @@ import (
 )
 
 type Client struct {
-	*http.Client
+	client  *http.Client
 	baseURL string
 	headers map[string]string
 }
 
-func NewClient(opts ...Option) *Client {
+func New(opts ...Option) *Client {
 	client := &Client{
-		Client:  &http.Client{},
+		client:  &http.Client{},
 		baseURL: "",
 		headers: make(map[string]string),
 	}
@@ -44,7 +44,7 @@ func (c *Client) Send(method string, url string, body io.Reader, headers map[str
 		return nil, fmt.Errorf("http.NewRequest: %w", err)
 	}
 
-	resp, err := c.Client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("c.Client.Do: %w", err)
 	}

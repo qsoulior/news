@@ -83,7 +83,7 @@ type NewsConfig struct {
 }
 
 func NewNews(cfg NewsConfig) News {
-	client := httpclient.NewClient(
+	client := httpclient.New(
 		httpclient.Headers(map[string]string{
 			"X-ACCESS-KEY": cfg.AccessKey,
 		}),

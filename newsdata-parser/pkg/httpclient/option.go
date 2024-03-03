@@ -20,6 +20,6 @@ func Headers(headers map[string]string) Option {
 
 func Timeout(d time.Duration) Option {
 	return func(c *Client) {
-		c.Client.Timeout = d
+		c.client.Timeout = d
 	}
 }
