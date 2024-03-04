@@ -21,7 +21,7 @@ func NewNews(cfg NewsConfig) *news {
 	return &news{cfg}
 }
 
-func (n *news) get(w http.ResponseWriter, r *http.Request) {
+func (n *news) Get(w http.ResponseWriter, r *http.Request) {
 	values := r.URL.Query()
 	query := service.Query{
 		Title:  values.Get("title"),
