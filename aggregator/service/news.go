@@ -10,14 +10,14 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 )
 
-type NewsConfig struct {
-	AMQP struct {
+type (
+	NewsConfig struct {
+		Repo       repo.News
 		Producer   rabbitmq.Producer
 		Exchange   string
 		RoutingKey string
 	}
-	repo repo.News
-}
+)
 
 type news struct {
 	NewsConfig
@@ -28,7 +28,7 @@ func NewNews(cfg NewsConfig) News {
 }
 
 func (n *news) Create(news entity.News) error {
-	if err := n.repo.Create(context.Background(), news); err != nil {
+	if err := n.Repo.Create(context.Background(), news); err != nil {
 		return fmt.Errorf("n.repo.Create: %w", err)
 	}
 
@@ -36,7 +36,7 @@ func (n *news) Create(news entity.News) error {
 }
 
 func (n *news) CreateMany(news []entity.News) error {
-	if err := n.repo.CreateMany(context.Background(), news); err != nil {
+	if err := n.Repo.CreateMany(context.Background(), news); err != nil {
 		return fmt.Errorf("n.repo.CreateMany: %w", err)
 	}
 
@@ -44,7 +44,7 @@ func (n *news) CreateMany(news []entity.News) error {
 }
 
 func (n *news) GetByID(id string) (*entity.News, error) {
-	news, err := n.repo.GetByID(context.Background(), id)
+	news, err := n.Repo.GetByID(context.Background(), id)
 	if err != nil {
 		return nil, fmt.Errorf("n.repo.GetByID: %w", err)
 	}
@@ -58,7 +58,7 @@ type (
 )
 
 func (n *news) GetByQuery(query Query, opts Options) ([]entity.News, error) {
-	news, err := n.repo.GetByQuery(context.Background(), query, opts)
+	news, err := n.Repo.GetByQuery(context.Background(), query, opts)
 	if err != nil {
 		return nil, fmt.Errorf("n.repo.GetByQuery: %w", err)
 	}
@@ -67,7 +67,7 @@ func (n *news) GetByQuery(query Query, opts Options) ([]entity.News, error) {
 }
 
 func (n *news) Parse(query string) error {
-	err := n.AMQP.Producer.Produce(n.AMQP.Exchange, n.AMQP.RoutingKey, amqp091.Publishing{
+	err := n.Producer.Produce(n.Exchange, n.RoutingKey, amqp091.Publishing{
 		ContentType:  "text/plain",
 		DeliveryMode: amqp091.Persistent,
 		Body:         []byte(query),

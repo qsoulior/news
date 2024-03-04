@@ -61,7 +61,11 @@ func (c *Connection) attemptOpen() error {
 	return nil
 }
 
-func (c *Connection) Close() error {
+func (c *Connection) Err() <-chan *amqp.Error {
+	return c.Conn.NotifyClose(make(chan *amqp.Error, 1))
+}
+
+func (c *Connection) Close(timeout time.Duration) error {
 	var err error
 	if c.Ch != nil {
 		err = c.Ch.Close()
@@ -71,7 +75,7 @@ func (c *Connection) Close() error {
 	}
 
 	if c.Conn != nil {
-		err := c.Conn.Close()
+		err := c.Conn.CloseDeadline(time.Now().Add(timeout))
 		if err != nil {
 			return fmt.Errorf("c.conn.Close: %w", err)
 		}

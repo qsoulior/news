@@ -10,4 +10,8 @@ type Config struct {
 	RabbitMQ struct {
 		URL string
 	}
+
+	MongoDB struct {
+		URL string
+	}
 }
