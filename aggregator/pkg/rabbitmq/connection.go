@@ -7,25 +7,25 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type ConnectionConfig struct {
+type Config struct {
 	URL          string
 	AttemptCount int
 	AttemptDelay time.Duration
 }
 
 type Connection struct {
-	ConnectionConfig
-	conn *amqp.Connection
-	ch   *amqp.Channel
+	Config
+	Conn *amqp.Connection
+	Ch   *amqp.Channel
 }
 
-func NewConnection(cfg ConnectionConfig) (*Connection, error) {
+func New(cfg Config) (*Connection, error) {
 	_, err := amqp.ParseURI(cfg.URL)
 	if err != nil {
 		return nil, fmt.Errorf("amqp.ParseURI: %w", err)
 	}
 
-	return &Connection{ConnectionConfig: cfg}, nil
+	return &Connection{Config: cfg}, nil
 }
 
 func (c *Connection) Open() error {
@@ -48,12 +48,12 @@ func (c *Connection) Open() error {
 func (c *Connection) attemptOpen() error {
 	var err error
 
-	c.conn, err = amqp.Dial(c.URL)
+	c.Conn, err = amqp.Dial(c.URL)
 	if err != nil {
 		return fmt.Errorf("amqp.Dial: %w", err)
 	}
 
-	c.ch, err = c.conn.Channel()
+	c.Ch, err = c.Conn.Channel()
 	if err != nil {
 		return fmt.Errorf("c.conn.Channel: %w", err)
 	}
@@ -63,15 +63,15 @@ func (c *Connection) attemptOpen() error {
 
 func (c *Connection) Close() error {
 	var err error
-	if c.ch != nil {
-		err = c.ch.Close()
+	if c.Ch != nil {
+		err = c.Ch.Close()
 		if err != nil {
 			return fmt.Errorf("c.ch.Close: %w", err)
 		}
 	}
 
-	if c.conn != nil {
-		err := c.conn.Close()
+	if c.Conn != nil {
+		err := c.Conn.Close()
 		if err != nil {
 			return fmt.Errorf("c.conn.Close: %w", err)
 		}

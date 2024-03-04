@@ -41,6 +41,7 @@ func (w *worker) Run() error {
 		if err != nil {
 			w.Logger.Error().Err(err).Msg("")
 			delay *= 2
+			continue
 		}
 
 		err = w.Services.Page.Set(nextPage)

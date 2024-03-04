@@ -12,7 +12,7 @@ import (
 
 type NewsConfig struct {
 	AMQP struct {
-		Producer   *rabbitmq.Producer
+		Producer   rabbitmq.Producer
 		Exchange   string
 		RoutingKey string
 	}

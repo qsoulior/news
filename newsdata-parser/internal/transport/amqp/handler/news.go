@@ -1,10 +1,7 @@
-package amqp
+package handler
 
 import (
-	"encoding/json"
-
-	"github.com/qsoulior/news/aggregator/entity"
-	"github.com/qsoulior/news/aggregator/service"
+	"github.com/qsoulior/news/newsdata-parser/internal/service"
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/rs/zerolog"
 )
@@ -23,14 +20,7 @@ func NewNews(cfg NewsConfig) *news {
 }
 
 func (n *news) Handle(msg *amqp091.Delivery) {
-	var news entity.News
-	err := json.Unmarshal(msg.Body, &news)
-	if err != nil {
-		n.Logger.Error().Err(err).Msg("")
-		return
-	}
-
-	err = n.Service.Create(news)
+	_, err := n.Service.Parse(string(msg.Body), "")
 	if err != nil {
 		n.Logger.Error().Err(err).Msg("")
 	}

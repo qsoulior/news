@@ -75,7 +75,7 @@ type NewsConfig struct {
 	BaseAPI   string
 	AccessKey string
 	AMQP      struct {
-		Producer   *rabbitmq.Producer
+		Producer   rabbitmq.Producer
 		Exchange   string
 		RoutingKey string
 	}
