@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/qsoulior/news/aggregator/service"
+	"github.com/qsoulior/news/aggregator/internal/service"
 	"github.com/rs/zerolog"
 )
 

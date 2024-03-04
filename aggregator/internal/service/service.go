@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/qsoulior/news/aggregator/entity"
-	"github.com/qsoulior/news/aggregator/repo"
+	"github.com/qsoulior/news/aggregator/internal/repo"
 )
 
 type News interface {

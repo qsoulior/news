@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/qsoulior/news/aggregator/service"
-	"github.com/qsoulior/news/aggregator/transport/http/handler"
+	"github.com/qsoulior/news/aggregator/internal/service"
+	"github.com/qsoulior/news/aggregator/internal/transport/http/handler"
 	"github.com/rs/zerolog"
 )
 

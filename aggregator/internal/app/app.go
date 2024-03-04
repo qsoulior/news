@@ -18,10 +18,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func Run(cfg *Config) {
-	out := zerolog.NewConsoleWriter()
-	logger := zerolog.New(out).With().Timestamp().Logger()
-
+func Run(cfg *Config, logger *zerolog.Logger) {
 	mongo, err := mongodb.New(mongodb.MongoConfig{
 		URL:          cfg.MongoDB.URL,
 		AttemptCount: 5,
@@ -63,10 +60,10 @@ func Run(cfg *Config) {
 		Repo:       newsRepo,
 	})
 
-	httpRouter := http.NewRouter(&logger, newsService)
+	httpRouter := http.NewRouter(logger, newsService)
 	httpServer := httpserver.New(httpRouter, httpserver.Addr(cfg.HTTP.Host, cfg.HTTP.Port))
 
-	amqpRouter := amqp.NewRouter(&logger, newsService)
+	amqpRouter := amqp.NewRouter(logger, newsService)
 	rmqConsumer := consumer.New(rmqConn, amqpRouter)
 
 	httpServer.Start()

@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/qsoulior/news/aggregator/entity"
+	"github.com/qsoulior/news/aggregator/internal/repo"
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
-	"github.com/qsoulior/news/aggregator/repo"
 	"github.com/rabbitmq/amqp091-go"
 )
 
