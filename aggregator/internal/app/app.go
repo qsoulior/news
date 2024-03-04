@@ -6,15 +6,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/qsoulior/news/aggregator/internal/repo"
+	"github.com/qsoulior/news/aggregator/internal/service"
+	"github.com/qsoulior/news/aggregator/internal/transport/amqp"
+	"github.com/qsoulior/news/aggregator/internal/transport/http"
 	"github.com/qsoulior/news/aggregator/pkg/httpserver"
 	"github.com/qsoulior/news/aggregator/pkg/mongodb"
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq/consumer"
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq/producer"
-	"github.com/qsoulior/news/aggregator/repo"
-	"github.com/qsoulior/news/aggregator/service"
-	"github.com/qsoulior/news/aggregator/transport/amqp"
-	"github.com/qsoulior/news/aggregator/transport/http"
 	"github.com/rs/zerolog"
 )
 
