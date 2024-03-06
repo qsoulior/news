@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/qsoulior/news/parser/service"
+	"github.com/qsoulior/news/parser/internal/service"
 	"github.com/rs/zerolog"
 )
 

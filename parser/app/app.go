@@ -3,11 +3,12 @@ package app
 import (
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq/consumer"
-	"github.com/qsoulior/news/parser/transport/amqp"
+	"github.com/qsoulior/news/parser/internal/service"
+	"github.com/qsoulior/news/parser/internal/transport/amqp"
 )
 
-func Run() {
-	amqpRouter := amqp.NewRouter(nil, nil)
+func Run(news service.News, page service.Page) {
+	amqpRouter := amqp.NewRouter(nil, news)
 	rmqConn, err := rabbitmq.New(rabbitmq.Config{})
 	if err != nil {
 	}
