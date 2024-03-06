@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"github.com/qsoulior/news/newsdata-parser/internal/service"
-	"github.com/rabbitmq/amqp091-go"
+	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
+	"github.com/qsoulior/news/parser/service"
 	"github.com/rs/zerolog"
 )
 
@@ -19,7 +19,7 @@ func NewNews(cfg NewsConfig) *news {
 	return &news{cfg}
 }
 
-func (n *news) Handle(msg *amqp091.Delivery) {
+func (n *news) Handle(msg *rabbitmq.Delivery) {
 	_, err := n.Service.Parse(string(msg.Body), "")
 	if err != nil {
 		n.Logger.Error().Err(err).Msg("")

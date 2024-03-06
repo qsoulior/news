@@ -7,7 +7,6 @@ import (
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/aggregator/internal/repo"
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
-	"github.com/rabbitmq/amqp091-go"
 )
 
 type (
@@ -67,9 +66,9 @@ func (n *news) GetByQuery(query Query, opts Options) ([]entity.News, error) {
 }
 
 func (n *news) Parse(query string) error {
-	err := n.Producer.Produce(n.Exchange, n.RoutingKey, amqp091.Publishing{
+	err := n.Producer.Produce(n.Exchange, n.RoutingKey, rabbitmq.Message{
 		ContentType:  "text/plain",
-		DeliveryMode: amqp091.Persistent,
+		DeliveryMode: 2,
 		Body:         []byte(query),
 	})
 

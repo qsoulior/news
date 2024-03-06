@@ -5,7 +5,7 @@ import (
 
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/aggregator/internal/service"
-	"github.com/rabbitmq/amqp091-go"
+	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
 	"github.com/rs/zerolog"
 )
 
@@ -22,7 +22,7 @@ func NewNews(cfg NewsConfig) *news {
 	return &news{cfg}
 }
 
-func (n *news) Handle(msg *amqp091.Delivery) {
+func (n *news) Handle(msg *rabbitmq.Delivery) {
 	var news entity.News
 	err := json.Unmarshal(msg.Body, &news)
 	if err != nil {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/qsoulior/news/newsdata-parser/internal/repo"
+	"github.com/qsoulior/news/parser/repo"
 )
 
 type page struct {
@@ -15,7 +15,7 @@ type PageConfig struct {
 	repo repo.Page
 }
 
-func NewPage(cfg PageConfig) Page {
+func NewPage(cfg PageConfig) *page {
 	return &page{
 		PageConfig: cfg,
 	}

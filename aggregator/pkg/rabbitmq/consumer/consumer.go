@@ -4,17 +4,16 @@ import (
 	"fmt"
 
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type consumer struct {
 	conn    *rabbitmq.Connection
-	handler Handler
+	handler rabbitmq.Handler
 
 	autoAck bool
 }
 
-func New(conn *rabbitmq.Connection, handler Handler, opts ...Option) *consumer {
+func New(conn *rabbitmq.Connection, handler rabbitmq.Handler, opts ...Option) *consumer {
 	consumer := &consumer{
 		conn:    conn,
 		handler: handler,
@@ -27,8 +26,6 @@ func New(conn *rabbitmq.Connection, handler Handler, opts ...Option) *consumer {
 
 	return consumer
 }
-
-type Handler func(msg *amqp.Delivery)
 
 func (c *consumer) Consume(queue string) error {
 	msgs, err := c.conn.Ch.Consume(

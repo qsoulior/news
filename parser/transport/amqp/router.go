@@ -1,9 +1,9 @@
 package amqp
 
 import (
-	"github.com/qsoulior/news/aggregator/internal/service"
-	"github.com/qsoulior/news/aggregator/internal/transport/amqp/handler"
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
+	"github.com/qsoulior/news/parser/service"
+	"github.com/qsoulior/news/parser/transport/amqp/handler"
 	"github.com/rs/zerolog"
 )
 

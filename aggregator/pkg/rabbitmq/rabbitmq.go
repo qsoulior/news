@@ -1,11 +1,15 @@
 package rabbitmq
 
-import "github.com/rabbitmq/amqp091-go"
+import amqp "github.com/rabbitmq/amqp091-go"
 
 type Consumer interface {
 	Consume(queue string) error
 }
 
 type Producer interface {
-	Produce(exchange string, routingKey string, msg amqp091.Publishing) error
+	Produce(exchange string, routingKey string, msg Message) error
 }
+
+type Message = amqp.Publishing
+type Delivery = amqp.Delivery
+type Handler func(msg *Delivery)

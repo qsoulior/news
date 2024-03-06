@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/qsoulior/news/newsdata-parser/pkg/redis"
+	"github.com/qsoulior/news/parser/pkg/redis"
 )
 
 type newsRedis struct {

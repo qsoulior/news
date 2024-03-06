@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type producer struct {
@@ -27,7 +26,7 @@ func New(conn *rabbitmq.Connection, opts ...Option) *producer {
 	return producer
 }
 
-func (p *producer) Produce(exchange string, routingKey string, msg amqp.Publishing) error {
+func (p *producer) Produce(exchange string, routingKey string, msg rabbitmq.Message) error {
 	var (
 		ctx    context.Context
 		cancel context.CancelFunc

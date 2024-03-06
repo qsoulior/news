@@ -10,10 +10,9 @@ import (
 
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
-	"github.com/qsoulior/news/newsdata-parser/internal/repo"
-	"github.com/qsoulior/news/newsdata-parser/pkg/httpclient"
-	"github.com/qsoulior/news/newsdata-parser/pkg/httpclient/httpresponse"
-	"github.com/rabbitmq/amqp091-go"
+	"github.com/qsoulior/news/parser/pkg/httpclient"
+	"github.com/qsoulior/news/parser/pkg/httpclient/httpresponse"
+	"github.com/qsoulior/news/parser/repo"
 )
 
 const (
@@ -82,7 +81,7 @@ type NewsConfig struct {
 	repo repo.News
 }
 
-func NewNews(cfg NewsConfig) News {
+func NewNews(cfg NewsConfig) *news {
 	client := httpclient.New(
 		httpclient.Headers(map[string]string{
 			"X-ACCESS-KEY": cfg.AccessKey,
@@ -137,9 +136,9 @@ func (n *news) parseResult(resp *http.Response) (string, error) {
 			return "", fmt.Errorf("json.Marshal: %w", err)
 		}
 
-		err = n.AMQP.Producer.Produce(n.AMQP.Exchange, n.AMQP.RoutingKey, amqp091.Publishing{
+		err = n.AMQP.Producer.Produce(n.AMQP.Exchange, n.AMQP.RoutingKey, rabbitmq.Message{
 			ContentType:  "application/json",
-			DeliveryMode: amqp091.Persistent,
+			DeliveryMode: 2,
 			Body:         body,
 		})
 		if err != nil {
