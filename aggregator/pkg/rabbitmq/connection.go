@@ -5,19 +5,19 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/rs/zerolog"
 )
 
 type Connection struct {
-	Ch     *amqp.Channel
-	conn   *amqp.Connection
-	logger *zerolog.Logger
+	*Config
+	Ch    *amqp.Channel
+	conn  *amqp.Connection
+	errCh chan *amqp.Error
 }
 
 func New(cfg *Config) (*Connection, error) {
-	c := &Connection{logger: cfg.Logger}
+	c := &Connection{Config: cfg}
 
-	err := c.open(cfg)
+	err := c.open()
 	if err != nil {
 		return nil, err
 	}
@@ -25,37 +25,57 @@ func New(cfg *Config) (*Connection, error) {
 	return c, nil
 }
 
-func (c *Connection) open(cfg *Config) error {
-	_, err := amqp.ParseURI(cfg.URL)
+func (c *Connection) observe() {
+	go func() {
+		if err := <-c.errCh; err != nil {
+			c.Close()
+			c.reopen()
+		}
+	}()
+}
+
+func (c *Connection) open() error {
+	_, err := amqp.ParseURI(c.URL)
 	if err != nil {
 		return fmt.Errorf("amqp.ParseURI: %w", err)
 	}
 
-	for i := cfg.AttemptCount; i > 0; i-- {
-		if err = c.attemptOpen(cfg); err == nil {
+	for i := c.AttemptCount; i > 0; i-- {
+		if err = c.attemptOpen(); err == nil {
 			return nil
 		}
 
-		c.logger.Error().
+		c.Logger.Error().
 			Err(err).
 			Int("left", i).
-			Dur("delay", cfg.AttemptDelay).
+			Dur("delay", c.AttemptDelay).
 			Msg("attempt to establish a connection")
 
-		time.Sleep(cfg.AttemptDelay)
+		time.Sleep(c.AttemptDelay)
 	}
 
 	if err != nil {
 		return err
 	}
 
+	defer c.observe()
 	return nil
 }
 
-func (c *Connection) attemptOpen(cfg *Config) error {
+func (c *Connection) reopen() {
+	for {
+		if err := c.attemptOpen(); err == nil {
+			defer c.observe()
+			return
+		}
+		time.Sleep(1 * time.Minute)
+	}
+}
+
+func (c *Connection) attemptOpen() error {
 	var err error
 
-	c.conn, err = amqp.Dial(cfg.URL)
+	c.conn, err = amqp.Dial(c.URL)
 	if err != nil {
 		return fmt.Errorf("amqp.Dial: %w", err)
 	}
@@ -65,25 +85,19 @@ func (c *Connection) attemptOpen(cfg *Config) error {
 		return fmt.Errorf("c.conn.Channel: %w", err)
 	}
 
+	c.errCh = c.Ch.NotifyClose(make(chan *amqp.Error, 1))
 	return nil
 }
 
-func (c *Connection) Err() <-chan *amqp.Error {
-	return c.conn.NotifyClose(make(chan *amqp.Error, 1))
-}
-
 func (c *Connection) Close() error {
-	var err error
-	if c.Ch != nil {
-		err = c.Ch.Close()
-		if err != nil {
+	if c.Ch != nil && !c.Ch.IsClosed() {
+		if err := c.Ch.Close(); err != nil {
 			return fmt.Errorf("c.Ch.Close: %w", err)
 		}
 	}
 
-	if c.conn != nil {
-		err := c.conn.Close()
-		if err != nil {
+	if c.conn != nil && !c.conn.IsClosed() {
+		if err := c.conn.Close(); err != nil {
 			return fmt.Errorf("c.conn.Close: %w", err)
 		}
 	}

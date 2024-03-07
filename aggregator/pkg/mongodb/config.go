@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	URL          string
+	URI          string
 	AttemptCount int
 	AttemptDelay time.Duration
 	Logger       *zerolog.Logger

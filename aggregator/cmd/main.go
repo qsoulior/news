@@ -2,15 +2,12 @@ package main
 
 import (
 	"flag"
+	"log"
 
 	"github.com/qsoulior/news/aggregator/internal/app"
-	"github.com/rs/zerolog"
 )
 
 func main() {
-	out := zerolog.NewConsoleWriter()
-	logger := zerolog.New(out).With().Timestamp().Logger()
-
 	var path string
 	flag.StringVar(&path, "c", "", "config file path")
 	flag.Parse()
@@ -22,8 +19,8 @@ func main() {
 
 	cfg, err := app.NewConfig(path)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("")
+		log.Fatalf("failed to read config: %s", err)
 	}
 
-	app.Run(cfg, &logger)
+	app.Run(cfg)
 }

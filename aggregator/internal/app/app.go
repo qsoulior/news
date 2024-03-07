@@ -23,43 +23,49 @@ import (
 
 var wg sync.WaitGroup
 
-func Run(cfg *Config, logger *zerolog.Logger) {
+func Run(cfg *Config) {
+	out := zerolog.NewConsoleWriter()
+	logger := zerolog.New(out).With().Timestamp().Logger()
+
 	// notify context
 	sigCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	// mongo client initialization
+	// mongo client
+	mongoLog := logger.With().Str("name", "mongo").Logger()
 	mongo, err := mongodb.New(sigCtx, &mongodb.Config{
-		URL:          cfg.MongoDB.URL,
+		URI:          cfg.MongoDB.URI,
 		AttemptCount: 5,
 		AttemptDelay: 5 * time.Second,
-		Logger:       logger,
+		Logger:       &mongoLog,
 	})
-
 	if err != nil {
-		logger.Fatal().Err(err).Msg("")
+		mongoLog.Error().Err(err).Msg("")
+		return
 	}
+	mongoLog.Info().Str("uri", cfg.MongoDB.URI).Msg("started")
 
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
 		err := mongo.Disconnect(ctx)
-		logger.Error().Err(err).Msg("")
+		mongoLog.Error().Err(err).Msg("")
 	}()
 
 	db := mongo.Client.Database("app")
 	newsRepo := repo.NewNewsMongo(db)
 
-	wg.Add(3)
-
-	// rabbit connection initialization
-	rmqConn, err := runRMQ(sigCtx, logger, cfg.RabbitMQ)
+	// rabbit connection
+	rmqLog := logger.With().Str("name", "rmq").Logger()
+	rmqConn, err := runRMQ(sigCtx, &rmqLog, cfg.RabbitMQ)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("")
+		rmqLog.Error().Err(err).Msg("")
+		return
 	}
+	rmqLog.Info().Msg("started")
 
-	// rabbit producer initialization
+	// rabbit producer
 	rmqProducer := producer.New(rmqConn)
 	newsService := service.NewNews(service.NewsConfig{
 		Producer:   rmqProducer,
@@ -68,19 +74,25 @@ func Run(cfg *Config, logger *zerolog.Logger) {
 		Repo:       newsRepo,
 	})
 
-	runConsumer(sigCtx, logger, newsService, rmqConn)
-	runServer(sigCtx, logger, newsService, cfg.HTTP)
+	// rabbit consumer
+	consumerLog := logger.With().Str("name", "consumer").Logger()
+	runConsumer(sigCtx, &consumerLog, newsService, rmqConn)
+	consumerLog.Info().Msg("started")
+
+	// http server
+	serverLog := logger.With().Str("name", "server").Logger()
+	runServer(sigCtx, &serverLog, newsService, cfg.HTTP)
+	logger.Info().Msg("started")
 
 	wg.Wait()
 }
 
 func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*rabbitmq.Connection, error) {
-	rmqLog := logger.With().Str("name", "rmq").Logger()
 	rmqConn, err := rabbitmq.New(&rabbitmq.Config{
 		URL:          cfg.URL,
 		AttemptCount: 5,
 		AttemptDelay: 5 * time.Second,
-		Logger:       &rmqLog,
+		Logger:       logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("rabbitmq.New: %w", err)
@@ -97,17 +109,14 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*r
 	}
 
 	go func() {
+		wg.Add(1)
 		defer wg.Done()
-		select {
-		case err := <-rmqConn.Err():
-			rmqLog.Error().Err(err).Msg("")
-		case <-ctx.Done():
-			rmqLog.Info().Msg("term signal accepted")
-		}
+		<-ctx.Done()
+		logger.Info().Msg("term signal accepted")
 
 		err := rmqConn.Close()
 		if err != nil {
-			rmqLog.Error().Err(err).Msg("graceful shutdown")
+			logger.Error().Err(err).Msg("graceful shutdown")
 		}
 	}()
 
@@ -115,33 +124,38 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*r
 }
 
 func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News, conn *rabbitmq.Connection) {
-	consumerLog := logger.With().Str("name", "consumer").Logger()
-	amqpRouter := amqp.NewRouter(&consumerLog, news)
+	amqpRouter := amqp.NewRouter(logger, news)
 	rmqConsumer := consumer.New(conn, amqpRouter)
 
 	go func() {
+		wg.Add(1)
 		defer wg.Done()
-		err := rmqConsumer.Consume(ctx, "news")
-		if err != nil {
-			consumerLog.Error().Err(err).Msg("")
+		for {
+			err := rmqConsumer.Consume(ctx, "news")
+			if err == nil {
+				logger.Info().Msg("graceful shutdown")
+				break
+			}
+			logger.Error().Err(err).Msg("")
+			time.Sleep(5 * time.Second)
 		}
 	}()
 }
 
 func runServer(ctx context.Context, logger *zerolog.Logger, news service.News, cfg ConfigHTTP) {
-	serverLog := logger.With().Str("name", "server").Logger()
-	httpRouter := http.NewRouter(&serverLog, news)
+	httpRouter := http.NewRouter(logger, news)
 	httpServer := httpserver.New(httpRouter, httpserver.Addr(cfg.Host, cfg.Port))
 
 	go func() {
+		wg.Add(1)
 		defer wg.Done()
 		httpServer.Start()
 
 		select {
 		case err := <-httpServer.Err():
-			serverLog.Error().Err(err).Msg("")
+			logger.Error().Err(err).Msg("")
 		case <-ctx.Done():
-			serverLog.Info().Msg("term signal accepted")
+			logger.Info().Msg("term signal accepted")
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -149,7 +163,7 @@ func runServer(ctx context.Context, logger *zerolog.Logger, news service.News, c
 
 		err := httpServer.Stop(ctx)
 		if err != nil {
-			serverLog.Error().Err(err).Msg("graceful shutdown")
+			logger.Error().Err(err).Msg("graceful shutdown")
 		}
 	}()
 }

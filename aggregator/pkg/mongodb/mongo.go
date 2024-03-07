@@ -36,7 +36,7 @@ func New(ctx context.Context, cfg *Config) (*Mongo, error) {
 }
 
 func (m *Mongo) connect(ctx context.Context, cfg *Config) error {
-	opts := options.Client().ApplyURI(cfg.URL)
+	opts := options.Client().ApplyURI(cfg.URI)
 	err := opts.Validate()
 	if err != nil {
 		return fmt.Errorf("opts.Validate: %w", err)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type consumer struct {
@@ -51,5 +52,9 @@ func (c *consumer) Consume(ctx context.Context, queue string) error {
 		}
 	}
 
-	return nil
+	if ctx.Err() != nil {
+		return nil
+	}
+
+	return fmt.Errorf("amqp.Delivery is closed: %w", amqp.ErrClosed)
 }
