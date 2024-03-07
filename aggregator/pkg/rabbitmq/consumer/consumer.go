@@ -1,6 +1,7 @@
 package consumer
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
@@ -27,8 +28,9 @@ func New(conn *rabbitmq.Connection, handler rabbitmq.Handler, opts ...Option) *c
 	return consumer
 }
 
-func (c *consumer) Consume(queue string) error {
-	msgs, err := c.conn.Ch.Consume(
+func (c *consumer) Consume(ctx context.Context, queue string) error {
+	msgs, err := c.conn.Ch.ConsumeWithContext(
+		ctx,
 		queue,
 		"",
 		c.autoAck,

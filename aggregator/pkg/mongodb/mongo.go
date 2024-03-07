@@ -5,52 +5,65 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type MongoConfig struct {
-	URL          string
-	AttemptCount int
-	AttemptDelay time.Duration
-}
-
 type Mongo struct {
-	MongoConfig
 	Client *mongo.Client
+	logger *zerolog.Logger
 }
 
-func New(cfg MongoConfig) (*Mongo, error) {
-	err := options.Client().ApplyURI(cfg.URL).Validate()
+func New(ctx context.Context, cfg *Config) (*Mongo, error) {
+	m := &Mongo{logger: cfg.Logger}
+
+	err := m.connect(ctx, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("options.Client.ApplyURI: %w", err)
+		return nil, err
 	}
 
-	return &Mongo{MongoConfig: cfg}, nil
+	err = m.ping(ctx, cfg)
+	if err != nil {
+		if err := m.Disconnect(ctx); err != nil {
+			return nil, err
+		}
+
+		return nil, err
+	}
+
+	return m, nil
 }
 
-func (m *Mongo) Connect(ctx context.Context) error {
-	var err error
+func (m *Mongo) connect(ctx context.Context, cfg *Config) error {
+	opts := options.Client().ApplyURI(cfg.URL)
+	err := opts.Validate()
+	if err != nil {
+		return fmt.Errorf("opts.Validate: %w", err)
+	}
 
-	opts := options.Client().ApplyURI(m.URL)
 	m.Client, err = mongo.Connect(ctx, opts)
 	if err != nil {
 		return fmt.Errorf("mongo.Connect: %w", err)
 	}
 
-	for i := m.AttemptCount; i > 0; i-- {
+	return nil
+}
+
+func (m *Mongo) ping(ctx context.Context, cfg *Config) error {
+	var err error
+	for i := cfg.AttemptCount; i > 0; i-- {
 		if err = m.Client.Ping(ctx, nil); err == nil {
 			return nil
 		}
 
-		log.Error().
-			Err(fmt.Errorf("m.Client.Ping: %w", err)).
+		m.logger.Error().
+			Err(err).
 			Int("left", i).
-			Dur("delay", m.AttemptDelay).
-			Msg("")
+			Dur("delay", cfg.AttemptDelay).
+			Msg("attempt to establish a connection")
 
-		time.Sleep(m.AttemptDelay)
+		time.Sleep(cfg.AttemptDelay)
 	}
 
 	if err != nil {

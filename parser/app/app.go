@@ -11,7 +11,7 @@ import (
 
 func Run(news service.News, page service.Page) {
 	amqpRouter := amqp.NewRouter(nil, news)
-	rmqConn, err := rabbitmq.New(rabbitmq.Config{})
+	rmqConn, err := rabbitmq.New(&rabbitmq.Config{})
 	if err != nil {
 	}
 

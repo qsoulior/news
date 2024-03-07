@@ -5,55 +5,62 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/rs/zerolog"
 )
 
-type Config struct {
-	URL          string
-	AttemptCount int
-	AttemptDelay time.Duration
-}
-
 type Connection struct {
-	Config
-	Conn *amqp.Connection
-	Ch   *amqp.Channel
+	Ch     *amqp.Channel
+	conn   *amqp.Connection
+	logger *zerolog.Logger
 }
 
-func New(cfg Config) (*Connection, error) {
-	_, err := amqp.ParseURI(cfg.URL)
+func New(cfg *Config) (*Connection, error) {
+	c := &Connection{logger: cfg.Logger}
+
+	err := c.open(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("amqp.ParseURI: %w", err)
+		return nil, err
 	}
 
-	return &Connection{Config: cfg}, nil
+	return c, nil
 }
 
-func (c *Connection) Open() error {
-	var err error
-	for i := c.AttemptCount; i > 0; i-- {
-		if err = c.attemptOpen(); err == nil {
+func (c *Connection) open(cfg *Config) error {
+	_, err := amqp.ParseURI(cfg.URL)
+	if err != nil {
+		return fmt.Errorf("amqp.ParseURI: %w", err)
+	}
+
+	for i := cfg.AttemptCount; i > 0; i-- {
+		if err = c.attemptOpen(cfg); err == nil {
 			return nil
 		}
 
-		time.Sleep(c.AttemptDelay)
+		c.logger.Error().
+			Err(err).
+			Int("left", i).
+			Dur("delay", cfg.AttemptDelay).
+			Msg("attempt to establish a connection")
+
+		time.Sleep(cfg.AttemptDelay)
 	}
 
 	if err != nil {
-		return fmt.Errorf("c.attemptOpen: %w", err)
+		return err
 	}
 
 	return nil
 }
 
-func (c *Connection) attemptOpen() error {
+func (c *Connection) attemptOpen(cfg *Config) error {
 	var err error
 
-	c.Conn, err = amqp.Dial(c.URL)
+	c.conn, err = amqp.Dial(cfg.URL)
 	if err != nil {
 		return fmt.Errorf("amqp.Dial: %w", err)
 	}
 
-	c.Ch, err = c.Conn.Channel()
+	c.Ch, err = c.conn.Channel()
 	if err != nil {
 		return fmt.Errorf("c.conn.Channel: %w", err)
 	}
@@ -62,20 +69,20 @@ func (c *Connection) attemptOpen() error {
 }
 
 func (c *Connection) Err() <-chan *amqp.Error {
-	return c.Conn.NotifyClose(make(chan *amqp.Error, 1))
+	return c.conn.NotifyClose(make(chan *amqp.Error, 1))
 }
 
-func (c *Connection) Close(timeout time.Duration) error {
+func (c *Connection) Close() error {
 	var err error
 	if c.Ch != nil {
 		err = c.Ch.Close()
 		if err != nil {
-			return fmt.Errorf("c.ch.Close: %w", err)
+			return fmt.Errorf("c.Ch.Close: %w", err)
 		}
 	}
 
-	if c.Conn != nil {
-		err := c.Conn.CloseDeadline(time.Now().Add(timeout))
+	if c.conn != nil {
+		err := c.conn.Close()
 		if err != nil {
 			return fmt.Errorf("c.conn.Close: %w", err)
 		}

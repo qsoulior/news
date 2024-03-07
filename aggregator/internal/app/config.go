@@ -6,21 +6,27 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
-type Config struct {
-	HTTP struct {
+type (
+	Config struct {
+		HTTP     ConfigHTTP     `yaml:"http"`
+		RabbitMQ ConfigRabbitMQ `yaml:"rabbitmq"`
+		MongoDB  ConfigMongoDB  `yaml:"mongodb"`
+	}
+
+	ConfigHTTP struct {
 		Host    string   `yaml:"host"`
 		Port    string   `yaml:"port"`
 		Origins []string `yaml:"origins"`
-	} `yaml:"http"`
+	}
 
-	RabbitMQ struct {
+	ConfigRabbitMQ struct {
 		URL string `yaml:"url"`
-	} `yaml:"rabbitmq"`
+	}
 
-	MongoDB struct {
+	ConfigMongoDB struct {
 		URL string `yaml:"url"`
-	} `yaml:"mongodb"`
-}
+	}
+)
 
 func NewConfig(path string) (*Config, error) {
 	cfg := new(Config)
