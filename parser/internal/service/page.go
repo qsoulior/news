@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/qsoulior/news/parser/repo"
+	"github.com/qsoulior/news/parser/internal/repo"
 )
 
 type page struct {
@@ -12,7 +12,7 @@ type page struct {
 }
 
 type PageConfig struct {
-	repo repo.Page
+	Repo repo.Page
 }
 
 func NewPage(cfg PageConfig) *page {
@@ -22,7 +22,7 @@ func NewPage(cfg PageConfig) *page {
 }
 
 func (p *page) Get() (string, error) {
-	page, err := p.repo.Get(context.Background())
+	page, err := p.Repo.Get(context.Background())
 	if err != nil {
 		return "", fmt.Errorf("p.Repo.Page.Get: %w", err)
 	}
@@ -32,7 +32,7 @@ func (p *page) Get() (string, error) {
 }
 
 func (p *page) Set(page string) error {
-	err := p.repo.Update(context.Background(), page)
+	err := p.Repo.Update(context.Background(), page)
 	if err != nil {
 		return fmt.Errorf("p.Repo.Page.Update: %w", err)
 	}

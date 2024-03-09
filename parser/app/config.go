@@ -1,12 +1,20 @@
 package app
 
-type Config struct {
-	API struct {
-		URL       string
-		AccessKey string
+type (
+	Config struct {
+		API struct {
+			URL       string
+			AccessKey string
+		}
+
+		RabbitMQ ConfigRabbitMQ
+
+		Redis struct {
+			URL string
+		}
 	}
 
-	RabbitMQ struct {
+	ConfigRabbitMQ struct {
 		URL string
 	}
-}
+)
