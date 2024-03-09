@@ -42,6 +42,9 @@ func (c *consumer) Consume(ctx context.Context, queue string) error {
 	)
 
 	if err != nil {
+		if ctx.Err() != nil {
+			return nil
+		}
 		return fmt.Errorf("c.conn.ch.Consume: %w", err)
 	}
 

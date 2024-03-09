@@ -24,7 +24,7 @@ type (
 	}
 
 	ConfigMongoDB struct {
-		URI string `yaml:"url"`
+		URI string `yaml:"uri"`
 	}
 )
 

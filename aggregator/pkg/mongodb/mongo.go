@@ -52,25 +52,28 @@ func (m *Mongo) connect(ctx context.Context, cfg *Config) error {
 
 func (m *Mongo) ping(ctx context.Context, cfg *Config) error {
 	var err error
+	timer := time.NewTimer(0)
 	for i := cfg.AttemptCount; i > 0; i-- {
-		if err = m.Client.Ping(ctx, nil); err == nil {
-			return nil
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+			if err = m.Client.Ping(ctx, nil); err == nil {
+				return nil
+			}
+
+			m.logger.Error().
+				Err(err).
+				Int("left", i).
+				Dur("delay", cfg.AttemptDelay).
+				Msg("attempt to establish a connection")
+
+			timer.Reset(cfg.AttemptDelay)
 		}
-
-		m.logger.Error().
-			Err(err).
-			Int("left", i).
-			Dur("delay", cfg.AttemptDelay).
-			Msg("attempt to establish a connection")
-
-		time.Sleep(cfg.AttemptDelay)
 	}
 
-	if err != nil {
-		return fmt.Errorf("m.Client.Ping: %w", err)
-	}
-
-	return nil
+	return err
 }
 
 func (m *Mongo) Disconnect(ctx context.Context) error {

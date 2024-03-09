@@ -50,7 +50,11 @@ func Run(cfg *Config) {
 		defer cancel()
 
 		err := mongo.Disconnect(ctx)
-		mongoLog.Error().Err(err).Msg("")
+		if err != nil {
+			mongoLog.Error().Err(err).Msg("")
+			return
+		}
+		mongoLog.Info().Msg("graceful shutdown")
 	}()
 
 	db := mongo.Client.Database("app")
@@ -82,13 +86,13 @@ func Run(cfg *Config) {
 	// http server
 	serverLog := logger.With().Str("name", "server").Logger()
 	runServer(sigCtx, &serverLog, newsService, cfg.HTTP)
-	logger.Info().Msg("started")
+	serverLog.Info().Msg("started")
 
 	wg.Wait()
 }
 
 func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*rabbitmq.Connection, error) {
-	rmqConn, err := rabbitmq.New(&rabbitmq.Config{
+	rmqConn, err := rabbitmq.New(ctx, &rabbitmq.Config{
 		URL:          cfg.URL,
 		AttemptCount: 5,
 		AttemptDelay: 5 * time.Second,
@@ -117,7 +121,9 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*r
 		err := rmqConn.Close()
 		if err != nil {
 			logger.Error().Err(err).Msg("graceful shutdown")
+			return
 		}
+		logger.Info().Msg("graceful shutdown")
 	}()
 
 	return rmqConn, nil
@@ -130,14 +136,19 @@ func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News,
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		for {
-			err := rmqConsumer.Consume(ctx, "news")
-			if err == nil {
-				logger.Info().Msg("graceful shutdown")
-				break
+		for timer := time.NewTimer(0); ; timer.Reset(5 * time.Second) {
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			case <-timer.C:
+				err := rmqConsumer.Consume(ctx, "news")
+				if err == nil {
+					logger.Info().Msg("graceful shutdown")
+					return
+				}
+				logger.Error().Err(err).Msg("")
 			}
-			logger.Error().Err(err).Msg("")
-			time.Sleep(5 * time.Second)
 		}
 	}()
 }
@@ -152,10 +163,10 @@ func runServer(ctx context.Context, logger *zerolog.Logger, news service.News, c
 		httpServer.Start()
 
 		select {
-		case err := <-httpServer.Err():
-			logger.Error().Err(err).Msg("")
 		case <-ctx.Done():
 			logger.Info().Msg("term signal accepted")
+		case err := <-httpServer.Err():
+			logger.Error().Err(err).Msg("")
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -164,6 +175,8 @@ func runServer(ctx context.Context, logger *zerolog.Logger, news service.News, c
 		err := httpServer.Stop(ctx)
 		if err != nil {
 			logger.Error().Err(err).Msg("graceful shutdown")
+			return
 		}
+		logger.Info().Msg("graceful shutdown")
 	}()
 }
