@@ -11,5 +11,5 @@ func Run(cfg *Config) {
 		AccessKey: cfg.API.AccessKey,
 	})
 
-	app.Run(cfg.Config, parser)
+	app.Run(&app.Config{RabbitMQ: app.ConfigRabbitMQ(cfg.RabbitMQ), Redis: app.ConfigRedis(cfg.Redis)}, parser)
 }

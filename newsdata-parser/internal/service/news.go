@@ -73,9 +73,6 @@ type NewsConfig struct {
 
 func NewNews(cfg NewsConfig) *news {
 	client := httpclient.New(
-		httpclient.Headers(map[string]string{
-			"X-ACCESS-KEY": cfg.AccessKey,
-		}),
 		httpclient.URL(cfg.BaseAPI),
 	)
 
@@ -88,6 +85,7 @@ func NewNews(cfg NewsConfig) *news {
 func (n *news) Parse(query string, page string) ([]entity.News, string, error) {
 	u, _ := url.Parse("/news")
 	values := u.Query()
+	values.Set("apikey", n.AccessKey)
 	values.Set("country", COUNTRY)
 	if query != "" {
 		values.Set("q", query)
@@ -101,6 +99,7 @@ func (n *news) Parse(query string, page string) ([]entity.News, string, error) {
 	if err != nil {
 		return nil, "", fmt.Errorf("n.client.Get: %w", err)
 	}
+	fmt.Println(resp.Request.URL)
 
 	switch resp.StatusCode {
 	case http.StatusOK:

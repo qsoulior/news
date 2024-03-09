@@ -4,19 +4,26 @@ import (
 	"fmt"
 
 	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/qsoulior/news/parser/app"
 )
 
 type (
 	Config struct {
-		*app.Config
-
-		API ConfigAPI `yaml:"api"`
+		RabbitMQ ConfigRabbitMQ `yaml:"rabbitmq"`
+		Redis    ConfigRedis    `yaml:"redis"`
+		API      ConfigAPI      `yaml:"api"`
 	}
 
 	ConfigAPI struct {
 		URL       string `yaml:"url"`
 		AccessKey string `yaml:"access_key"`
+	}
+
+	ConfigRabbitMQ struct {
+		URL string `yaml:"url"`
+	}
+
+	ConfigRedis struct {
+		URL string `yaml:"url"`
 	}
 )
 
