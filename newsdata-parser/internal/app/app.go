@@ -5,8 +5,11 @@ import (
 	"github.com/qsoulior/news/parser/app"
 )
 
-func Run() {
-	news := service.NewNews(service.NewsConfig{})
-	page := service.NewPage(service.PageConfig{})
-	app.Run(news, page)
+func Run(cfg *Config) {
+	parser := service.NewNews(service.NewsConfig{
+		BaseAPI:   cfg.API.URL,
+		AccessKey: cfg.API.AccessKey,
+	})
+
+	app.Run(cfg.Config, parser)
 }

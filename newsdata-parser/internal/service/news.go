@@ -1,18 +1,14 @@
 package service
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/qsoulior/news/aggregator/entity"
-	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 	"github.com/qsoulior/news/parser/pkg/httpclient/httpresponse"
-	"github.com/qsoulior/news/parser/repo"
 )
 
 const (
@@ -73,12 +69,6 @@ type news struct {
 type NewsConfig struct {
 	BaseAPI   string
 	AccessKey string
-	AMQP      struct {
-		Producer   rabbitmq.Producer
-		Exchange   string
-		RoutingKey string
-	}
-	repo repo.News
 }
 
 func NewNews(cfg NewsConfig) *news {
@@ -95,7 +85,7 @@ func NewNews(cfg NewsConfig) *news {
 	}
 }
 
-func (n *news) Parse(query string, page string) (string, error) {
+func (n *news) Parse(query string, page string) ([]entity.News, string, error) {
 	u, _ := url.Parse("/news")
 	values := u.Query()
 	values.Set("country", COUNTRY)
@@ -109,58 +99,42 @@ func (n *news) Parse(query string, page string) (string, error) {
 	u.RawQuery = values.Encode()
 	resp, err := n.client.Get(u.String(), nil)
 	if err != nil {
-		return "", fmt.Errorf("n.client.Get: %w", err)
+		return nil, "", fmt.Errorf("n.client.Get: %w", err)
 	}
 
 	switch resp.StatusCode {
 	case http.StatusOK:
 		return n.parseResult(resp)
 	case http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusConflict, http.StatusUnsupportedMediaType, http.StatusUnprocessableEntity, http.StatusTooManyRequests:
-		return n.parseError(resp)
+		return nil, "", n.parseError(resp)
 	case http.StatusInternalServerError:
-		return "", ErrInternalServer
+		return nil, "", ErrInternalServer
 	}
 
-	return "", ErrUnexpectedCode
+	return nil, "", ErrUnexpectedCode
 }
 
-func (n *news) parseResult(resp *http.Response) (string, error) {
+func (n *news) parseResult(resp *http.Response) ([]entity.News, string, error) {
 	data, err := httpresponse.JSON[NewsResponseSuccess](resp)
 	if err != nil {
-		return "", fmt.Errorf("httpresponse.JSON: %w", err)
+		return nil, "", fmt.Errorf("httpresponse.JSON: %w", err)
 	}
 
-	for _, result := range data.Results {
-		body, err := json.Marshal(result.Entity())
-		if err != nil {
-			return "", fmt.Errorf("json.Marshal: %w", err)
-		}
-
-		err = n.AMQP.Producer.Produce(n.AMQP.Exchange, n.AMQP.RoutingKey, rabbitmq.Message{
-			ContentType:  "application/json",
-			DeliveryMode: 2,
-			Body:         body,
-		})
-		if err != nil {
-			// TODO: amqp.Produce error handling
-			err := n.repo.Create(context.Background(), string(body))
-			if err != nil {
-				return "", fmt.Errorf("n.Repo.News.Create: %w", err)
-			}
-
-			return "", fmt.Errorf("n.AMQP.Producer.Produce: %w", err)
-		}
+	news := make([]entity.News, len(data.Results))
+	for i, result := range data.Results {
+		news[i] = *result.Entity()
 	}
-	return data.NextPage, nil
+
+	return news, data.NextPage, nil
 }
 
-func (n *news) parseError(resp *http.Response) (string, error) {
+func (n *news) parseError(resp *http.Response) error {
 	data, err := httpresponse.JSON[NewsResponseError](resp)
 	if err != nil {
-		return "", fmt.Errorf("httpresponse.JSON: %w", err)
+		return fmt.Errorf("httpresponse.JSON: %w", err)
 	}
 	if resp.StatusCode == http.StatusTooManyRequests {
-		return "", &ResponseError{ErrRateLimit, data.Results.Code}
+		return &ResponseError{ErrRateLimit, data.Results.Code}
 	}
-	return "", &ResponseError{ErrRequestInvalid, data.Results.Code}
+	return &ResponseError{ErrRequestInvalid, data.Results.Code}
 }

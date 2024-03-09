@@ -2,19 +2,15 @@ package app
 
 type (
 	Config struct {
-		API struct {
-			URL       string
-			AccessKey string
-		}
-
-		RabbitMQ ConfigRabbitMQ
-
-		Redis struct {
-			URL string
-		}
+		RabbitMQ ConfigRabbitMQ `yaml:"rabbitmq"`
+		Redis    ConfigRedis    `yaml:"redis"`
 	}
 
 	ConfigRabbitMQ struct {
-		URL string
+		URL string `yaml:"url"`
+	}
+
+	ConfigRedis struct {
+		URL string `yaml:"url"`
 	}
 )
