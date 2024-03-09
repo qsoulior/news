@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	urllib "net/url"
 )
 
 type Client struct {
@@ -28,11 +27,7 @@ func New(opts ...Option) *Client {
 }
 
 func (c *Client) Send(method string, url string, body io.Reader, headers map[string]string) (*http.Response, error) {
-	resultURL, err := urllib.JoinPath(c.baseURL, url)
-	if err != nil {
-		return nil, fmt.Errorf("url.JoinPath: %w", err)
-	}
-
+	resultURL := c.baseURL + url
 	req, err := http.NewRequest(method, resultURL, body)
 	for key, value := range c.headers {
 		req.Header.Set(key, value)

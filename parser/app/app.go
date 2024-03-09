@@ -45,7 +45,11 @@ func Run(cfg *Config, parser service.Parser) {
 
 	defer func() {
 		err := redis.Close()
-		redisLog.Error().Err(err).Msg("")
+		if err != nil {
+			redisLog.Error().Err(err).Msg("")
+			return
+		}
+		redisLog.Info().Msg("graceful shutdown")
 	}()
 
 	newsRepo := repo.NewNewsRedis(redis)
@@ -63,10 +67,12 @@ func Run(cfg *Config, parser service.Parser) {
 	// rabbit producer
 	rmqProducer := producer.New(rmqConn)
 	newsService := service.NewNews(service.NewsConfig{
+		Repo:   newsRepo,
+		Parser: parser,
+
 		Producer:   rmqProducer,
 		Exchange:   "",
 		RoutingKey: "news",
-		Repo:       newsRepo,
 	})
 
 	pageService := service.NewPage(service.PageConfig{
@@ -87,7 +93,7 @@ func Run(cfg *Config, parser service.Parser) {
 }
 
 func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*rabbitmq.Connection, string, error) {
-	rmqConn, err := rabbitmq.New(&rabbitmq.Config{
+	rmqConn, err := rabbitmq.New(ctx, &rabbitmq.Config{
 		URL:          cfg.URL,
 		AttemptCount: 5,
 		AttemptDelay: 10 * time.Second,
@@ -129,14 +135,19 @@ func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News,
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		for {
-			err := rmqConsumer.Consume(ctx, queue)
-			if err == nil {
-				logger.Info().Msg("graceful shutdown")
-				break
+		for timer := time.NewTimer(0); ; timer.Reset(5 * time.Second) {
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			case <-timer.C:
+				err := rmqConsumer.Consume(ctx, queue)
+				if err == nil {
+					logger.Info().Msg("graceful shutdown")
+					return
+				}
+				logger.Error().Err(err).Msg("")
 			}
-			logger.Error().Err(err).Msg("")
-			time.Sleep(5 * time.Second)
 		}
 	}()
 }
@@ -152,14 +163,11 @@ func runWorker(ctx context.Context, logger *zerolog.Logger, news service.News, p
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		for {
-			err := worker.Run(ctx)
-			if err == nil {
-				logger.Info().Msg("graceful shutdown")
-				break
-			}
-			logger.Error().Err(err).Msg("")
-			time.Sleep(5 * time.Second)
+		err := worker.Run(ctx)
+		if err == nil {
+			logger.Info().Msg("graceful shutdown")
+			return
 		}
+		logger.Error().Err(err).Msg("")
 	}()
 }

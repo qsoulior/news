@@ -52,8 +52,7 @@ func (n *news) Parse(query string, page string) (string, error) {
 		})
 		if err != nil {
 			// TODO: amqp.Produce error handling
-			err := n.Repo.Create(context.Background(), string(body))
-			if err != nil {
+			if err := n.Repo.Create(context.Background(), string(body)); err != nil {
 				return "", fmt.Errorf("n.Repo.News.Create: %w", err)
 			}
 

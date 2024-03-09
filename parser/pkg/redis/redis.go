@@ -46,25 +46,28 @@ func (r *Redis) open(cfg *RedisConfig) error {
 
 func (r *Redis) ping(ctx context.Context, cfg *RedisConfig) error {
 	var err error
+	timer := time.NewTimer(0)
 	for i := cfg.AttemptCount; i > 0; i-- {
-		if err = r.Client.Ping(ctx).Err(); err == nil {
-			return nil
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+			if err = r.Client.Ping(ctx).Err(); err == nil {
+				return nil
+			}
+
+			r.logger.Error().
+				Err(err).
+				Int("left", i).
+				Dur("delay", cfg.AttemptDelay).
+				Msg("attempt to establish a connection")
+
+			timer.Reset(cfg.AttemptDelay)
 		}
-
-		r.logger.Error().
-			Err(err).
-			Int("left", i).
-			Dur("delay", cfg.AttemptDelay).
-			Msg("attempt to establish a connection")
-
-		time.Sleep(cfg.AttemptDelay)
 	}
 
-	if err != nil {
-		return fmt.Errorf("r.Client.Ping: %w", err)
-	}
-
-	return nil
+	return err
 }
 
 func (r *Redis) Close() error {

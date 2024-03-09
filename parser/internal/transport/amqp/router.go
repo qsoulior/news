@@ -19,6 +19,7 @@ func NewRouter(logger *zerolog.Logger, service service.News) rabbitmq.Handler {
 	})
 
 	return func(msg *rabbitmq.Delivery) {
+		logger.Info().Msg("message accepted")
 		news.Handle(msg)
 	}
 }
