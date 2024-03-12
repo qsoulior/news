@@ -21,7 +21,7 @@ import (
 
 var wg sync.WaitGroup
 
-func Run(cfg *Config, parser service.Parser) {
+func Run(cfg *Config, consumerParser service.Parser, workerParser service.Parser) {
 	out := zerolog.NewConsoleWriter()
 	logger := zerolog.New(out).With().Timestamp().Logger()
 
@@ -66,9 +66,9 @@ func Run(cfg *Config, parser service.Parser) {
 
 	// rabbit producer
 	rmqProducer := producer.New(rmqConn)
-	newsService := service.NewNews(service.NewsConfig{
+	workerService := service.NewNews(service.NewsConfig{
 		Repo:   newsRepo,
-		Parser: parser,
+		Parser: workerParser,
 
 		Producer:   rmqProducer,
 		Exchange:   "",
@@ -80,13 +80,22 @@ func Run(cfg *Config, parser service.Parser) {
 	})
 
 	// rabbit consumer
+	consumerService := service.NewNews(service.NewsConfig{
+		Repo:   newsRepo,
+		Parser: consumerParser,
+
+		Producer:   rmqProducer,
+		Exchange:   "",
+		RoutingKey: "news",
+	})
+
 	consumerLog := logger.With().Str("name", "consumer").Logger()
-	runConsumer(sigCtx, &consumerLog, newsService, rmqConn, queue)
+	runConsumer(sigCtx, &consumerLog, consumerService, rmqConn, queue)
 	consumerLog.Info().Msg("started")
 
 	// worker
 	workerLog := logger.With().Str("name", "worker").Logger()
-	runWorker(sigCtx, &workerLog, newsService, pageService)
+	runWorker(sigCtx, &workerLog, workerService, pageService)
 	workerLog.Info().Msg("started")
 
 	wg.Wait()

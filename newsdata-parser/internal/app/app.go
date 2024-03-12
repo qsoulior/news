@@ -6,10 +6,15 @@ import (
 )
 
 func Run(cfg *Config) {
-	parser := service.NewNews(service.NewsConfig{
-		BaseAPI:   cfg.API.URL,
-		AccessKey: cfg.API.AccessKey,
+	consumerParser := service.NewNews(service.NewsConfig{
+		BaseAPI:   cfg.API.Consumer.URL,
+		AccessKey: cfg.API.Consumer.AccessKey,
 	})
 
-	app.Run(&app.Config{RabbitMQ: app.ConfigRabbitMQ(cfg.RabbitMQ), Redis: app.ConfigRedis(cfg.Redis)}, parser)
+	workerParser := service.NewNews(service.NewsConfig{
+		BaseAPI:   cfg.API.Worker.URL,
+		AccessKey: cfg.API.Worker.AccessKey,
+	})
+
+	app.Run(&app.Config{RabbitMQ: app.ConfigRabbitMQ(cfg.RabbitMQ), Redis: app.ConfigRedis(cfg.Redis)}, consumerParser, workerParser)
 }
