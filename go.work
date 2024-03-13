@@ -2,5 +2,6 @@ go 1.22.0
 
 use (
 	aggregator
+	iz-parser
 	newsdata-parser
 )
