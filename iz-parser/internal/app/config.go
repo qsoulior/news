@@ -14,14 +14,7 @@ type (
 	}
 
 	ConfigAPI struct {
-		Consumer struct {
-			URL       string `yaml:"url"`
-			AccessKey string `yaml:"access_key"`
-		} `yaml:"consumer"`
-		Worker struct {
-			URL       string `yaml:"url"`
-			AccessKey string `yaml:"access_key"`
-		} `yaml:"worker"`
+		URL string `yaml:"url"`
 	}
 
 	ConfigRabbitMQ struct {

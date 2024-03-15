@@ -99,7 +99,6 @@ func (n *news) Parse(query string, page string) ([]entity.News, string, error) {
 	if err != nil {
 		return nil, "", fmt.Errorf("n.client.Get: %w", err)
 	}
-	fmt.Println(resp.Request.URL)
 
 	switch resp.StatusCode {
 	case http.StatusOK:

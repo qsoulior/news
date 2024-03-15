@@ -1,6 +1,9 @@
 package httpclient
 
-import "time"
+import (
+	"net/http/cookiejar"
+	"time"
+)
 
 type Option func(*Client)
 
@@ -21,5 +24,11 @@ func Headers(headers map[string]string) Option {
 func Timeout(d time.Duration) Option {
 	return func(c *Client) {
 		c.client.Timeout = d
+	}
+}
+
+func CookieJar(jar *cookiejar.Jar) Option {
+	return func(c *Client) {
+		c.client.Jar = jar
 	}
 }
