@@ -7,6 +7,6 @@ type News interface {
 }
 
 type Page interface {
-	Get() (string, error)
-	Set(page string) error
+	Get(ctx context.Context) (string, error)
+	Set(ctx context.Context, page string) error
 }

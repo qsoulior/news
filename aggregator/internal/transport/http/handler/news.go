@@ -45,7 +45,7 @@ func (n *news) Get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	news, err := n.Service.GetByQuery(query, opts)
+	news, err := n.Service.GetByQuery(r.Context(), query, opts)
 	if err != nil {
 		ErrorJSON(w, "unexpected error while receiving data", http.StatusInternalServerError)
 		n.Logger.Error().Err(err).Msg("")
@@ -53,7 +53,7 @@ func (n *news) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(news) < 5 && query.Title != "" {
-		err := n.Service.Parse(query.Title)
+		err := n.Service.Parse(r.Context(), query.Title)
 		if err != nil {
 			n.Logger.Error().Err(err).Msg("")
 		}

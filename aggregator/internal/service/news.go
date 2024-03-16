@@ -26,24 +26,24 @@ func NewNews(cfg NewsConfig) News {
 	return &news{cfg}
 }
 
-func (n *news) Create(news entity.News) error {
-	if err := n.Repo.Create(context.Background(), news); err != nil {
+func (n *news) Create(ctx context.Context, news entity.News) error {
+	if err := n.Repo.Create(ctx, news); err != nil {
 		return fmt.Errorf("n.repo.Create: %w", err)
 	}
 
 	return nil
 }
 
-func (n *news) CreateMany(news []entity.News) error {
-	if err := n.Repo.CreateMany(context.Background(), news); err != nil {
+func (n *news) CreateMany(ctx context.Context, news []entity.News) error {
+	if err := n.Repo.CreateMany(ctx, news); err != nil {
 		return fmt.Errorf("n.repo.CreateMany: %w", err)
 	}
 
 	return nil
 }
 
-func (n *news) GetByID(id string) (*entity.News, error) {
-	news, err := n.Repo.GetByID(context.Background(), id)
+func (n *news) GetByID(ctx context.Context, id string) (*entity.News, error) {
+	news, err := n.Repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("n.repo.GetByID: %w", err)
 	}
@@ -56,8 +56,8 @@ type (
 	Options = repo.Options
 )
 
-func (n *news) GetByQuery(query Query, opts Options) ([]entity.News, error) {
-	news, err := n.Repo.GetByQuery(context.Background(), query, opts)
+func (n *news) GetByQuery(ctx context.Context, query Query, opts Options) ([]entity.News, error) {
+	news, err := n.Repo.GetByQuery(ctx, query, opts)
 	if err != nil {
 		return nil, fmt.Errorf("n.repo.GetByQuery: %w", err)
 	}
@@ -65,8 +65,8 @@ func (n *news) GetByQuery(query Query, opts Options) ([]entity.News, error) {
 	return news, nil
 }
 
-func (n *news) Parse(query string) error {
-	err := n.Producer.Produce(n.Exchange, n.RoutingKey, rabbitmq.Message{
+func (n *news) Parse(ctx context.Context, query string) error {
+	err := n.Producer.Produce(ctx, n.Exchange, n.RoutingKey, rabbitmq.Message{
 		ContentType:  "text/plain",
 		DeliveryMode: 2,
 		Body:         []byte(query),

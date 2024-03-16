@@ -27,7 +27,7 @@ func NewWorker(cfg WorkerConfig) *worker {
 }
 
 func (w *worker) Run(ctx context.Context) error {
-	page, err := w.Page.Get()
+	page, err := w.Page.Get(ctx)
 	if err != nil && !errors.Is(err, service.ErrNotExist) {
 		return fmt.Errorf("w.Services.Page.Get: %w", err)
 	}
@@ -48,7 +48,7 @@ func (w *worker) work(ctx context.Context, page string) {
 		case <-timer.C:
 			nextPage, err := w.News.Parse(ctx, "", page)
 			if err == nil {
-				err = w.Page.Set(nextPage)
+				err = w.Page.Set(ctx, nextPage)
 				if err != nil {
 					w.Logger.Error().Str("next_page", nextPage).Err(err).Msg("")
 				}

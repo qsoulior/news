@@ -26,21 +26,21 @@ func New(conn *rabbitmq.Connection, opts ...Option) *producer {
 	return producer
 }
 
-func (p *producer) Produce(exchange string, routingKey string, msg rabbitmq.Message) error {
+func (p *producer) Produce(ctx context.Context, exchange string, routingKey string, msg rabbitmq.Message) error {
 	var (
-		ctx    context.Context
-		cancel context.CancelFunc
+		timeoutCtx context.Context
+		cancel     context.CancelFunc
 	)
 
 	if p.timeout > 0 {
-		ctx, cancel = context.WithTimeout(context.Background(), p.timeout)
+		timeoutCtx, cancel = context.WithTimeout(ctx, p.timeout)
 	} else {
-		ctx, cancel = context.WithCancel(context.Background())
+		timeoutCtx, cancel = context.WithCancel(ctx)
 	}
 	defer cancel()
 
 	err := p.conn.Ch.PublishWithContext(
-		ctx,
+		timeoutCtx,
 		exchange,
 		routingKey,
 		false,

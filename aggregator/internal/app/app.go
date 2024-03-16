@@ -160,7 +160,7 @@ func runServer(ctx context.Context, logger *zerolog.Logger, news service.News, c
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		httpServer.Start()
+		httpServer.Start(ctx)
 
 		select {
 		case <-ctx.Done():

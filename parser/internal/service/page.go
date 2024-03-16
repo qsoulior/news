@@ -21,8 +21,8 @@ func NewPage(cfg PageConfig) *page {
 	}
 }
 
-func (p *page) Get() (string, error) {
-	page, err := p.Repo.Get(context.Background())
+func (p *page) Get(ctx context.Context) (string, error) {
+	page, err := p.Repo.Get(ctx)
 	if err != nil {
 		return "", fmt.Errorf("p.Repo.Page.Get: %w", err)
 	}
@@ -31,8 +31,8 @@ func (p *page) Get() (string, error) {
 
 }
 
-func (p *page) Set(page string) error {
-	err := p.Repo.Update(context.Background(), page)
+func (p *page) Set(ctx context.Context, page string) error {
+	err := p.Repo.Update(ctx, page)
 	if err != nil {
 		return fmt.Errorf("p.Repo.Page.Update: %w", err)
 	}

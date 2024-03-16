@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"context"
+	"net"
 	"net/http"
 )
 
@@ -26,7 +27,11 @@ func New(handler http.Handler, opts ...Option) *Server {
 	return server
 }
 
-func (s *Server) Start() {
+func (s *Server) Start(ctx context.Context) {
+	s.server.BaseContext = func(_ net.Listener) context.Context {
+		return ctx
+	}
+
 	go func() {
 		s.errCh <- s.server.ListenAndServe()
 		close(s.errCh)

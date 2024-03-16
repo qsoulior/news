@@ -45,14 +45,14 @@ func (n *news) Parse(ctx context.Context, query string, page string) (string, er
 			return "", fmt.Errorf("json.Marshal: %w", err)
 		}
 
-		err = n.Producer.Produce(n.Exchange, n.RoutingKey, rabbitmq.Message{
+		err = n.Producer.Produce(ctx, n.Exchange, n.RoutingKey, rabbitmq.Message{
 			ContentType:  "application/json",
 			DeliveryMode: 2,
 			Body:         body,
 		})
 		if err != nil {
 			// TODO: amqp.Produce error handling
-			if err := n.Repo.Create(context.Background(), string(body)); err != nil {
+			if err := n.Repo.Create(ctx, string(body)); err != nil {
 				return "", fmt.Errorf("n.Repo.News.Create: %w", err)
 			}
 

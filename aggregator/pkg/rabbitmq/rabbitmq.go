@@ -11,7 +11,7 @@ type Consumer interface {
 }
 
 type Producer interface {
-	Produce(exchange string, routingKey string, msg Message) error
+	Produce(ctx context.Context, exchange string, routingKey string, msg Message) error
 }
 
 type Message = amqp.Publishing
