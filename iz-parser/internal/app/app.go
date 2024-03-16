@@ -6,13 +6,8 @@ import (
 )
 
 func Run(cfg *Config) {
-	consumerParser := service.NewNewsFeed(service.NewsConfig{
-		BaseAPI: cfg.API.URL,
-	})
-
-	workerParser := service.NewNewsFeed(service.NewsConfig{
-		BaseAPI: cfg.API.URL,
-	})
+	consumerParser := service.NewNewsSearch(cfg.API.URL)
+	workerParser := service.NewNewsFeed(cfg.API.URL)
 
 	app.Run(
 		&app.Config{

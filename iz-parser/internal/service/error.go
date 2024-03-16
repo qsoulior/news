@@ -10,7 +10,7 @@ type statusError struct {
 	Text string
 }
 
-func NewStatusError(code int) *statusError {
+func newStatusError(code int) *statusError {
 	return &statusError{code, http.StatusText(code)}
 }
 
