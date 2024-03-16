@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -34,7 +35,7 @@ func NewNewsSearch(baseAPI string) *newsSearch {
 	return search
 }
 
-func (n *newsSearch) parseURLs(query string, page string) ([]string, error) {
+func (n *newsSearch) parseURLs(ctx context.Context, query string, page string) ([]string, error) {
 	u, _ := url.Parse("/search")
 	values := u.Query()
 	values.Set("text", query)
@@ -43,7 +44,7 @@ func (n *newsSearch) parseURLs(query string, page string) ([]string, error) {
 	values.Set("from", page+"0")
 	u.RawQuery = values.Encode()
 
-	resp, err := n.client.Get(u.String(), map[string]string{
+	resp, err := n.client.Get(ctx, u.String(), map[string]string{
 		"User-Agent": gofakeit.UserAgent(),
 	})
 	if err != nil {

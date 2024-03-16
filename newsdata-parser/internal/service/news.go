@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -82,7 +83,7 @@ func NewNews(cfg NewsConfig) *news {
 	}
 }
 
-func (n *news) Parse(query string, page string) ([]entity.News, string, error) {
+func (n *news) Parse(ctx context.Context, query string, page string) ([]entity.News, string, error) {
 	u, _ := url.Parse("/news")
 	values := u.Query()
 	values.Set("apikey", n.AccessKey)
@@ -95,7 +96,7 @@ func (n *news) Parse(query string, page string) ([]entity.News, string, error) {
 	}
 
 	u.RawQuery = values.Encode()
-	resp, err := n.client.Get(u.String(), nil)
+	resp, err := n.client.Get(ctx, u.String(), nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("n.client.Get: %w", err)
 	}

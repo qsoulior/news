@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 )
 
 type news interface {
-	parseURLs(query string, page string) ([]string, error)
+	parseURLs(ctx context.Context, query string, page string) ([]string, error)
 }
 
 type newsAbstract struct {
@@ -23,15 +24,15 @@ type newsAbstract struct {
 	client *httpclient.Client
 }
 
-func (n *newsAbstract) Parse(query string, page string) ([]entity.News, string, error) {
-	urls, err := n.parseURLs(query, page)
+func (n *newsAbstract) Parse(ctx context.Context, query string, page string) ([]entity.News, string, error) {
+	urls, err := n.parseURLs(ctx, query, page)
 	if err != nil {
 		return nil, "", err
 	}
 
 	news := make([]entity.News, 0, len(urls))
 	for _, url := range urls {
-		newsItem, err := n.parseOne(url)
+		newsItem, err := n.parseOne(ctx, url)
 		if err != nil {
 			continue
 		}
@@ -50,8 +51,8 @@ func (n *newsAbstract) Parse(query string, page string) ([]entity.News, string, 
 	return news, strconv.Itoa(nextPage + 1), nil
 }
 
-func (n *newsAbstract) parseOne(url string) (*entity.News, error) {
-	resp, err := n.client.Get(url, map[string]string{
+func (n *newsAbstract) parseOne(ctx context.Context, url string) (*entity.News, error) {
+	resp, err := n.client.Get(ctx, url, map[string]string{
 		"User-Agent": gofakeit.UserAgent(),
 	})
 	if err != nil {

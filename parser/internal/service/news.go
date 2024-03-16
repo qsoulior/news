@@ -11,7 +11,7 @@ import (
 )
 
 type Parser interface {
-	Parse(query string, page string) ([]entity.News, string, error)
+	Parse(ctx context.Context, query string, page string) ([]entity.News, string, error)
 }
 
 type news struct {
@@ -33,8 +33,8 @@ func NewNews(cfg NewsConfig) *news {
 	}
 }
 
-func (n *news) Parse(query string, page string) (string, error) {
-	results, page, err := n.Parser.Parse(query, page)
+func (n *news) Parse(ctx context.Context, query string, page string) (string, error) {
+	results, page, err := n.Parser.Parse(ctx, query, page)
 	if err != nil {
 		return "", fmt.Errorf("n.Parser.Parse: %w", err)
 	}

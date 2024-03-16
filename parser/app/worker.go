@@ -46,7 +46,7 @@ func (w *worker) work(ctx context.Context, page string) {
 			timer.Stop()
 			return
 		case <-timer.C:
-			nextPage, err := w.News.Parse("", page)
+			nextPage, err := w.News.Parse(ctx, "", page)
 			if err == nil {
 				err = w.Page.Set(nextPage)
 				if err != nil {

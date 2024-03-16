@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -45,7 +46,7 @@ type ViewDTO struct {
 	Data    string `json:"data"`
 }
 
-func (n *newsFeed) parseURLs(query string, page string) ([]string, error) {
+func (n *newsFeed) parseURLs(ctx context.Context, query string, page string) ([]string, error) {
 	u, _ := url.Parse("/views/ajax?_wrapper_format=drupal_ajax")
 
 	var reqData url.Values
@@ -53,7 +54,7 @@ func (n *newsFeed) parseURLs(query string, page string) ([]string, error) {
 	reqData.Set("view_display_id", "page_feed")
 	reqData.Set("page", page)
 
-	resp, err := n.client.Post(u.String(), strings.NewReader(reqData.Encode()), map[string]string{
+	resp, err := n.client.Post(ctx, u.String(), strings.NewReader(reqData.Encode()), map[string]string{
 		"User-Agent":   gofakeit.UserAgent(),
 		"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
 	})

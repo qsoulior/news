@@ -1,7 +1,9 @@
 package service
 
+import "context"
+
 type News interface {
-	Parse(query string, page string) (string, error)
+	Parse(ctx context.Context, query string, page string) (string, error)
 }
 
 type Page interface {
