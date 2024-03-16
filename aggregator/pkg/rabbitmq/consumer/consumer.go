@@ -49,7 +49,7 @@ func (c *consumer) Consume(ctx context.Context, queue string) error {
 	}
 
 	for msg := range msgs {
-		c.handler(&msg)
+		c.handler(ctx, &msg)
 		if !c.autoAck {
 			msg.Ack(false)
 		}

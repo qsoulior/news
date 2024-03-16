@@ -1,6 +1,8 @@
 package amqp
 
 import (
+	"context"
+
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
 	"github.com/qsoulior/news/parser/internal/service"
 	"github.com/qsoulior/news/parser/internal/transport/amqp/handler"
@@ -18,8 +20,8 @@ func NewRouter(logger *zerolog.Logger, service service.News) rabbitmq.Handler {
 		Service: service,
 	})
 
-	return func(msg *rabbitmq.Delivery) {
+	return func(ctx context.Context, msg *rabbitmq.Delivery) {
 		logger.Info().Msg("message accepted")
-		news.Handle(msg)
+		news.Handle(ctx, msg)
 	}
 }
