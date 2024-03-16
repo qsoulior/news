@@ -4,6 +4,7 @@ import "time"
 
 type News struct {
 	Title       string    `json:"title" bson:"title"`
+	Description string    `json:"description" bson:"title"`
 	Link        string    `json:"link" bson:"link"`
 	Source      string    `json:"source" bson:"source"`
 	PublishedAt time.Time `json:"published_at" bson:"published_at"`

@@ -17,20 +17,22 @@ const (
 )
 
 type NewsDTO struct {
-	ArticleID  string    `json:"article_id"`
-	Title      string    `json:"title"`
-	Link       string    `json:"link"`
-	SourceID   string    `json:"source_id"`
-	PubDate    time.Time `json:"pub_date"`
-	Creator    []string  `json:"creator"`
-	Keywords   []string  `json:"keywords"`
-	Categories []string  `json:"categories"`
-	Content    string    `json:"content"`
+	ArticleID   string    `json:"article_id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Link        string    `json:"link"`
+	SourceID    string    `json:"source_id"`
+	PubDate     time.Time `json:"pub_date"`
+	Creator     []string  `json:"creator"`
+	Keywords    []string  `json:"keywords"`
+	Categories  []string  `json:"categories"`
+	Content     string    `json:"content"`
 }
 
 func (dto *NewsDTO) Entity() *entity.News {
 	entity := &entity.News{
 		Title:       dto.Title,
+		Description: dto.Description,
 		Link:        dto.Link,
 		Source:      dto.SourceID,
 		PublishedAt: dto.PubDate,

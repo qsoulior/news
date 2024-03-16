@@ -77,10 +77,7 @@ func (n *newsAbstract) parseOne(ctx context.Context, url string) (*entity.News, 
 	article := doc.Find("[role=\"article\"]")
 
 	news.Title = article.Find("[itemprop=\"headline\"] span").Text()
-
-	// TODO: add description to entity
-	_ = article.Find("[itemprop=\"alternativeHeadline\"]").Text()
-
+	news.Description = article.Find("[itemprop=\"alternativeHeadline\"]").Text()
 	news.Authors = article.
 		Find(".article_page__left__top__author [itemprop=\"name\"]").
 		Map(func(i int, s *goquery.Selection) string { return s.Text() })
@@ -89,7 +86,6 @@ func (n *newsAbstract) parseOne(ctx context.Context, url string) (*entity.News, 
 	if !ok {
 		return nil, errors.New("empty datetime")
 	}
-
 	datetimeLayout := "2006-01-02T15:04:05Z"
 	news.PublishedAt, err = time.Parse(datetimeLayout, datetimeStr)
 	if err != nil {
@@ -113,6 +109,5 @@ func (n *newsAbstract) parseOne(ctx context.Context, url string) (*entity.News, 
 	})
 
 	news.Content = text.String()
-
 	return news, nil
 }
