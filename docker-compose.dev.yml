@@ -2,6 +2,7 @@ include:
   - aggregator/docker-compose.dev.yml
   - newsdata-parser/docker-compose.dev.yml
   - iz-parser/docker-compose.dev.yml
+  - lenta-parser/docker-compose.dev.yml
 
 services:
   rabbitmq:

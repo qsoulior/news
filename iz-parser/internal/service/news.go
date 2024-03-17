@@ -22,6 +22,7 @@ type news interface {
 type newsAbstract struct {
 	news
 	client *httpclient.Client
+	appID  string
 }
 
 func (n *newsAbstract) Parse(ctx context.Context, query string, page string) ([]entity.News, string, error) {
@@ -70,7 +71,7 @@ func (n *newsAbstract) parseOne(ctx context.Context, url string) (*entity.News, 
 	}
 
 	news := &entity.News{
-		Source: "iz.ru",
+		Source: n.appID,
 		Link:   resp.Request.URL.String(),
 	}
 

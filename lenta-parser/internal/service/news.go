@@ -26,6 +26,7 @@ type news interface {
 type newsAbstract struct {
 	news
 	baseAPI string
+	appID   string
 	client  *httpclient.Client
 }
 
@@ -75,7 +76,7 @@ func (n *newsAbstract) parseOne(ctx context.Context, url *newsURL) (*entity.News
 	}
 
 	news := &entity.News{
-		Source:      "lenta.ru",
+		Source:      n.appID,
 		Link:        resp.Request.URL.String(),
 		PublishedAt: url.PublishedAt,
 	}
@@ -89,7 +90,7 @@ func (n *newsAbstract) parseOne(ctx context.Context, url *newsURL) (*entity.News
 		Map(func(i int, s *goquery.Selection) string { return s.Text() })
 
 	var text strings.Builder
-	textItems := topic.Find("topic-body__content topic-body__content-text")
+	textItems := topic.Find(".topic-body__content .topic-body__content-text")
 	textItems.Each(func(i int, s *goquery.Selection) {
 		text.WriteString(s.Text())
 		if i < textItems.Size()-1 {
@@ -100,7 +101,7 @@ func (n *newsAbstract) parseOne(ctx context.Context, url *newsURL) (*entity.News
 	news.Content = text.String()
 
 	news.Authors = topic.
-		Find(".topic-authors topic-authors__author").
+		Find(".topic-authors .topic-authors__author").
 		Map(func(i int, s *goquery.Selection) string { return s.Text() })
 
 	return news, nil

@@ -70,6 +70,7 @@ type news struct {
 }
 
 type NewsConfig struct {
+	AppID     string
 	BaseAPI   string
 	AccessKey string
 }

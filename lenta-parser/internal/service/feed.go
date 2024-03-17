@@ -16,12 +16,13 @@ type newsFeed struct {
 	*newsAbstract
 }
 
-func NewNewsFeed(baseAPI string) *newsFeed {
+func NewNewsFeed(baseAPI string, appID string) *newsFeed {
 	client := httpclient.New()
 
 	abstract := &newsAbstract{
 		client:  client,
 		baseAPI: baseAPI,
+		appID:   appID,
 	}
 
 	feed := &newsFeed{

@@ -6,12 +6,13 @@ import (
 )
 
 func Run(cfg *Config) {
-	searchParser := service.NewNewsSearch(cfg.API.URL)
-	feedParser := service.NewNewsFeed(cfg.API.URL)
+	appID := "iz"
+	searchParser := service.NewNewsSearch(cfg.API.URL, appID)
+	feedParser := service.NewNewsFeed(cfg.API.URL, appID)
 
 	app.Run(
 		&app.Config{
-			ID:       "iz",
+			ID:       appID,
 			RabbitMQ: app.ConfigRabbitMQ(cfg.RabbitMQ),
 			Redis:    app.ConfigRedis(cfg.Redis),
 		},

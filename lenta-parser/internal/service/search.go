@@ -16,12 +16,13 @@ type newsSearch struct {
 	*newsAbstract
 }
 
-func NewNewsSearch(baseAPI string) *newsSearch {
+func NewNewsSearch(baseAPI string, appID string) *newsSearch {
 	client := httpclient.New()
 
 	abstract := &newsAbstract{
 		client:  client,
 		baseAPI: baseAPI,
+		appID:   appID,
 	}
 
 	search := &newsSearch{

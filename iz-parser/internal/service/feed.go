@@ -19,7 +19,7 @@ type newsFeed struct {
 	*newsAbstract
 }
 
-func NewNewsFeed(baseAPI string) *newsFeed {
+func NewNewsFeed(baseAPI string, appID string) *newsFeed {
 	client := httpclient.New(
 		httpclient.URL(baseAPI),
 		httpclient.Headers(map[string]string{
@@ -29,6 +29,7 @@ func NewNewsFeed(baseAPI string) *newsFeed {
 
 	abstract := &newsAbstract{
 		client: client,
+		appID:  appID,
 	}
 
 	feed := &newsFeed{
