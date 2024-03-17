@@ -24,7 +24,10 @@ import (
 var wg sync.WaitGroup
 
 func Run(cfg *Config) {
-	out := zerolog.NewConsoleWriter()
+	zerolog.DurationFieldUnit = time.Second
+	out := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
+		w.TimeFormat = time.RFC3339
+	})
 	logger := zerolog.New(out).With().Timestamp().Logger()
 
 	// notify context
@@ -32,7 +35,7 @@ func Run(cfg *Config) {
 	defer cancel()
 
 	// mongo client
-	mongoLog := logger.With().Str("name", "mongo").Logger()
+	mongoLog := logger.With().Str("module", "mongo").Logger()
 	mongo, err := mongodb.New(sigCtx, &mongodb.Config{
 		URI:          cfg.MongoDB.URI,
 		AttemptCount: 5,
@@ -61,7 +64,7 @@ func Run(cfg *Config) {
 	newsRepo := repo.NewNewsMongo(db)
 
 	// rabbit connection
-	rmqLog := logger.With().Str("name", "rmq").Logger()
+	rmqLog := logger.With().Str("module", "rmq").Logger()
 	rmqConn, err := runRMQ(sigCtx, &rmqLog, cfg.RabbitMQ)
 	if err != nil {
 		rmqLog.Error().Err(err).Msg("")
@@ -79,12 +82,12 @@ func Run(cfg *Config) {
 	})
 
 	// rabbit consumer
-	consumerLog := logger.With().Str("name", "consumer").Logger()
+	consumerLog := logger.With().Str("module", "consumer").Logger()
 	runConsumer(sigCtx, &consumerLog, newsService, rmqConn)
 	consumerLog.Info().Msg("started")
 
 	// http server
-	serverLog := logger.With().Str("name", "server").Logger()
+	serverLog := logger.With().Str("module", "server").Logger()
 	runServer(sigCtx, &serverLog, newsService, cfg.HTTP)
 	serverLog.Info().Msg("started")
 
@@ -102,7 +105,7 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*r
 		return nil, fmt.Errorf("rabbitmq.New: %w", err)
 	}
 
-	err = rmqConn.Ch.ExchangeDeclare("queries", "fanout", false, false, false, false, nil)
+	err = rmqConn.Ch.ExchangeDeclare("query", "fanout", true, false, false, false, nil)
 	if err != nil {
 		return nil, fmt.Errorf("rmqConn.Ch.ExchangeDeclare: %w", err)
 	}

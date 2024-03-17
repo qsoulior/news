@@ -11,6 +11,7 @@ func Run(cfg *Config) {
 
 	app.Run(
 		&app.Config{
+			ID:       "iz",
 			RabbitMQ: app.ConfigRabbitMQ(cfg.RabbitMQ),
 			Redis:    app.ConfigRedis(cfg.Redis),
 		},

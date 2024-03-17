@@ -22,7 +22,10 @@ import (
 var wg sync.WaitGroup
 
 func Run(cfg *Config, searchParser service.Parser, feedParser service.Parser) {
-	out := zerolog.NewConsoleWriter()
+	zerolog.DurationFieldUnit = time.Second
+	out := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
+		w.TimeFormat = time.RFC3339
+	})
 	logger := zerolog.New(out).With().Timestamp().Logger()
 
 	// notify context
@@ -30,7 +33,7 @@ func Run(cfg *Config, searchParser service.Parser, feedParser service.Parser) {
 	defer cancel()
 
 	// redis client
-	redisLog := logger.With().Str("name", "redis").Logger()
+	redisLog := logger.With().Str("module", "redis").Logger()
 	redis, err := redis.New(sigCtx, &redis.RedisConfig{
 		URL:          cfg.Redis.URL,
 		AttemptCount: 5,
@@ -56,8 +59,8 @@ func Run(cfg *Config, searchParser service.Parser, feedParser service.Parser) {
 	pageRepo := repo.NewPageRedis(redis)
 
 	// rabbit connection
-	rmqLog := logger.With().Str("name", "rmq").Logger()
-	rmqConn, queue, err := runRMQ(sigCtx, &rmqLog, cfg.RabbitMQ)
+	rmqLog := logger.With().Str("module", "rmq").Logger()
+	rmqConn, queue, err := runRMQ(sigCtx, &rmqLog, cfg.RabbitMQ.URL, "query."+cfg.ID)
 	if err != nil {
 		rmqLog.Error().Err(err).Msg("")
 		return
@@ -73,6 +76,7 @@ func Run(cfg *Config, searchParser service.Parser, feedParser service.Parser) {
 		Producer:   rmqProducer,
 		Exchange:   "",
 		RoutingKey: "news",
+		AppID:      cfg.ID,
 	})
 
 	pageService := service.NewPage(service.PageConfig{
@@ -87,28 +91,29 @@ func Run(cfg *Config, searchParser service.Parser, feedParser service.Parser) {
 		Producer:   rmqProducer,
 		Exchange:   "",
 		RoutingKey: "news",
+		AppID:      cfg.ID,
 	})
 
-	consumerLog := logger.With().Str("name", "consumer").Logger()
+	consumerLog := logger.With().Str("module", "consumer").Logger()
 	runConsumer(sigCtx, &consumerLog, searchService, rmqConn, queue)
 	consumerLog.Info().Msg("started")
 
 	// worker
-	workerLog := logger.With().Str("name", "worker").Logger()
+	workerLog := logger.With().Str("module", "worker").Logger()
 	runWorker(sigCtx, &workerLog, feedService, pageService)
 	workerLog.Info().Msg("started")
 
 	// releaser
-	releaserLog := logger.With().Str("name", "releaser").Logger()
+	releaserLog := logger.With().Str("module", "releaser").Logger()
 	runReleaser(sigCtx, &releaserLog, feedService)
 	releaserLog.Info().Msg("started")
 
 	wg.Wait()
 }
 
-func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*rabbitmq.Connection, string, error) {
+func runRMQ(ctx context.Context, logger *zerolog.Logger, url string, queueName string) (*rabbitmq.Connection, string, error) {
 	rmqConn, err := rabbitmq.New(ctx, &rabbitmq.Config{
-		URL:          cfg.URL,
+		URL:          url,
 		AttemptCount: 5,
 		AttemptDelay: 10 * time.Second,
 		Logger:       logger,
@@ -117,12 +122,12 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*r
 		return nil, "", fmt.Errorf("rabbitmq.New: %w", err)
 	}
 
-	queue, err := rmqConn.Ch.QueueDeclare("", true, false, true, false, nil)
+	queue, err := rmqConn.Ch.QueueDeclare(queueName, true, false, false, false, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("rmqConn.Ch.QueueDeclare: %w", err)
 	}
 
-	err = rmqConn.Ch.QueueBind(queue.Name, "", "queries", false, nil)
+	err = rmqConn.Ch.QueueBind(queue.Name, "", "query", false, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("rmqConn.Ch.QueueBind: %w", err)
 	}
@@ -188,7 +193,7 @@ func runWorker(ctx context.Context, logger *zerolog.Logger, news service.News, p
 
 func runReleaser(ctx context.Context, logger *zerolog.Logger, news service.News) {
 	releaser := newReleaser(releaserConfig{
-		Delay:  10 * time.Minute,
+		Delay:  30 * time.Second,
 		Logger: logger,
 		News:   news,
 	})

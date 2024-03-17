@@ -21,7 +21,7 @@ func NewRouter(logger *zerolog.Logger, service service.News) rabbitmq.Handler {
 	})
 
 	return func(ctx context.Context, msg *rabbitmq.Delivery) {
-		logger.Info().Msg("message accepted")
+		logger.Info().Str("app", msg.AppId).Str("id", msg.MessageId).Msg("message accepted")
 		news.Handle(ctx, msg)
 	}
 }

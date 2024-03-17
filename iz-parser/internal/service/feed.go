@@ -49,7 +49,7 @@ type ViewDTO struct {
 func (n *newsFeed) parseURLs(ctx context.Context, query string, page string) ([]string, error) {
 	u, _ := url.Parse("/views/ajax?_wrapper_format=drupal_ajax")
 
-	var reqData url.Values
+	reqData := make(url.Values, 3)
 	reqData.Set("view_name", "content_field")
 	reqData.Set("view_display_id", "page_feed")
 	reqData.Set("page", page)

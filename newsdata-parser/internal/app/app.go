@@ -16,5 +16,13 @@ func Run(cfg *Config) {
 		AccessKey: cfg.API.Worker.AccessKey,
 	})
 
-	app.Run(&app.Config{RabbitMQ: app.ConfigRabbitMQ(cfg.RabbitMQ), Redis: app.ConfigRedis(cfg.Redis)}, consumerParser, workerParser)
+	app.Run(
+		&app.Config{
+			ID:       "newsdata",
+			RabbitMQ: app.ConfigRabbitMQ(cfg.RabbitMQ),
+			Redis:    app.ConfigRedis(cfg.Redis),
+		},
+		consumerParser,
+		workerParser,
+	)
 }

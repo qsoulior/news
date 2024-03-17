@@ -53,16 +53,16 @@ func (w *worker) work(ctx context.Context, page string) {
 					w.Logger.Error().Str("next_page", nextPage).Err(err).Msg("")
 				}
 
-				w.Logger.Info().Str("page", page).Str("next_page", nextPage).Msg("parsed")
-				page = nextPage
 				delay = w.Delay
+				w.Logger.Info().Str("page", page).Str("next_page", nextPage).Dur("delay", delay).Msg("parsed")
+				page = nextPage
 			} else {
-				w.Logger.Error().Str("page", page).Err(err).Msg("")
-				if delay >= 0 {
+				if delay > 0 {
 					delay *= 2
 				} else {
 					delay = w.Delay
 				}
+				w.Logger.Error().Str("page", page).Err(err).Dur("delay", delay).Msg("")
 			}
 
 			timer.Reset(delay)

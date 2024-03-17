@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/aggregator/pkg/rabbitmq"
 	"github.com/qsoulior/news/parser/internal/repo"
@@ -26,6 +27,7 @@ type NewsConfig struct {
 	Producer   rabbitmq.Producer
 	Exchange   string
 	RoutingKey string
+	AppID      string
 }
 
 func NewNews(cfg NewsConfig) *news {
@@ -46,45 +48,55 @@ func (n *news) Parse(ctx context.Context, query string, page string) (string, er
 			return "", fmt.Errorf("json.Marshal: %w", err)
 		}
 
-		err = n.store(ctx, body)
-		if err != nil {
-			return "", err
+		if err := n.produce(ctx, body); err == nil {
+			continue
+		}
+
+		if err := n.Repo.Create(ctx, string(body)); err != nil {
+			return "", fmt.Errorf("n.Repo.Create: %w", err)
 		}
 	}
 
 	return page, nil
 }
 
-func (n *news) Release(ctx context.Context) error {
+func (n *news) Release(ctx context.Context) (int, error) {
+	count := 0
 	for {
-		jsonStr, err := n.Repo.Pop(ctx)
+		jsonStr, err := n.Repo.GetFirst(ctx)
 		if err != nil && !errors.Is(err, ErrNotExist) {
-			return fmt.Errorf("n.Repo.Pop: %w", err)
+			return count, fmt.Errorf("n.Repo.GetFirst: %w", err)
 		}
 
 		if jsonStr == "" {
-			return nil
+			return count, nil
 		}
 
-		err = n.store(ctx, []byte(jsonStr))
+		err = n.produce(ctx, []byte(jsonStr))
 		if err != nil {
-			return err
+			return count, err
+		}
+
+		count++
+
+		err = n.Repo.DeleteFirst(ctx)
+		if err != nil {
+			return count, fmt.Errorf("n.Repo.DeleteFirst: %w", err)
 		}
 	}
 }
 
-func (n *news) store(ctx context.Context, body []byte) error {
+func (n *news) produce(ctx context.Context, body []byte) error {
 	err := n.Producer.Produce(ctx, n.Exchange, n.RoutingKey, rabbitmq.Message{
+		AppId:        n.AppID,
+		MessageId:    uuid.NewString(),
 		ContentType:  "application/json",
 		DeliveryMode: 2,
 		Body:         body,
 	})
 
 	if err != nil {
-		err := n.Repo.Create(ctx, string(body))
-		if err != nil {
-			return fmt.Errorf("n.Repo.Create: %w", err)
-		}
+		return fmt.Errorf("n.Producer.Produce: %w", err)
 	}
 
 	return nil
