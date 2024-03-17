@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"slices"
@@ -69,7 +68,7 @@ func (n *newsFeed) parseURLs(ctx context.Context, query string, page string) ([]
 
 	respData, err := httpresponse.JSON[[]ViewDTO](resp)
 	if err != nil {
-		log.Println(err)
+		return nil, fmt.Errorf("httpresponse.JSON[[]ViewDTO]: %w", err)
 	}
 
 	index := slices.IndexFunc(*respData, func(item ViewDTO) bool {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/brianvoe/gofakeit/v7"
@@ -12,8 +13,13 @@ import (
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 )
 
+type newsURL struct {
+	url         string
+	publishedAt time.Time
+}
+
 type news interface {
-	parseURLs(ctx context.Context, query string, page string) ([]string, error)
+	parseURLs(ctx context.Context, query string, page string) ([]newsURL, error)
 }
 
 type newsAbstract struct {
@@ -48,8 +54,8 @@ func (n *newsAbstract) Parse(ctx context.Context, query string, page string) ([]
 	return news, strconv.Itoa(nextPage + 1), nil
 }
 
-func (n *newsAbstract) parseOne(ctx context.Context, url string) (*entity.News, error) {
-	resp, err := n.client.Get(ctx, url, map[string]string{
+func (n *newsAbstract) parseOne(ctx context.Context, url newsURL) (*entity.News, error) {
+	resp, err := n.client.Get(ctx, url.url, map[string]string{
 		"User-Agent": gofakeit.UserAgent(),
 	})
 	if err != nil {
@@ -67,9 +73,11 @@ func (n *newsAbstract) parseOne(ctx context.Context, url string) (*entity.News, 
 	}
 
 	news := &entity.News{
-		Source: "lenta.ru",
-		Link:   resp.Request.URL.String(),
+		Source:      "lenta.ru",
+		Link:        resp.Request.URL.String(),
+		PublishedAt: url.publishedAt,
 	}
 
+	// TODO
 	return news, nil
 }

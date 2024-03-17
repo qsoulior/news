@@ -27,6 +27,6 @@ func NewNewsSearch(baseAPI string) *newsSearch {
 	return search
 }
 
-func (n *newsSearch) parseURLs(ctx context.Context, query string, page string) ([]string, error) {
+func (n *newsSearch) parseURLs(ctx context.Context, query string, page string) ([]newsURL, error) {
 	return nil, nil
 }
