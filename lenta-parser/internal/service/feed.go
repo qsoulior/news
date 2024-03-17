@@ -17,12 +17,11 @@ type newsFeed struct {
 }
 
 func NewNewsFeed(baseAPI string) *newsFeed {
-	client := httpclient.New(
-		httpclient.URL(baseAPI),
-	)
+	client := httpclient.New()
 
 	abstract := &newsAbstract{
-		client: client,
+		client:  client,
+		baseAPI: baseAPI,
 	}
 
 	feed := &newsFeed{
@@ -62,7 +61,8 @@ type TopicResponse struct {
 
 func (n *newsFeed) parseURLs(ctx context.Context, query string, page string) ([]*newsURL, error) {
 	// rubrics
-	rubricResp, err := n.client.Get(ctx, "/v3/rubrics", map[string]string{
+	u, _ := url.Parse(n.baseAPI + "/v3/rubrics")
+	rubricResp, err := n.client.Get(ctx, u.String(), map[string]string{
 		"User-Agent": gofakeit.UserAgent(),
 	})
 	if err != nil {
@@ -78,7 +78,7 @@ func (n *newsFeed) parseURLs(ctx context.Context, query string, page string) ([]
 	}
 
 	// topics
-	u, _ := url.Parse("/v3/topics/by_rubrics")
+	u, _ = url.Parse(n.baseAPI + "/v3/topics/by_rubrics")
 	values := u.Query()
 
 	for _, rubric := range rubricData.Rubrics {
@@ -108,7 +108,7 @@ func (n *newsFeed) parseURLs(ctx context.Context, query string, page string) ([]
 	for _, topic := range topicData.Topics {
 		if topic.Headline.Type == "news" {
 			urls = append(urls, &newsURL{
-				URL:         topic.Headline.Links.Self,
+				URL:         topic.Headline.Links.Public,
 				PublishedAt: time.Unix(int64(topic.Headline.Info.Modified), 0),
 			})
 		}

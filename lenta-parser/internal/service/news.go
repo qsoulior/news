@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -24,7 +25,8 @@ type news interface {
 
 type newsAbstract struct {
 	news
-	client *httpclient.Client
+	baseAPI string
+	client  *httpclient.Client
 }
 
 func (n *newsAbstract) Parse(ctx context.Context, query string, page string) ([]entity.News, string, error) {
@@ -67,7 +69,7 @@ func (n *newsAbstract) parseOne(ctx context.Context, url *newsURL) (*entity.News
 	}
 
 	defer resp.Body.Close()
-	_, err = goquery.NewDocumentFromReader(resp.Body)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("goquery.NewDocumentFromReader: %w", err)
 	}
@@ -78,6 +80,28 @@ func (n *newsAbstract) parseOne(ctx context.Context, url *newsURL) (*entity.News
 		PublishedAt: url.PublishedAt,
 	}
 
-	// TODO
+	topic := doc.Find(".topic-page__container")
+
+	news.Title = topic.Find(".topic-body__title").Text()
+	news.Description = topic.Find(".topic-body__title-yandex").Text()
+	news.Categories = topic.
+		Find(".topic-header .topic-header__rubric").
+		Map(func(i int, s *goquery.Selection) string { return s.Text() })
+
+	var text strings.Builder
+	textItems := topic.Find("topic-body__content topic-body__content-text")
+	textItems.Each(func(i int, s *goquery.Selection) {
+		text.WriteString(s.Text())
+		if i < textItems.Size()-1 {
+			text.WriteRune('\n')
+		}
+	})
+
+	news.Content = text.String()
+
+	news.Authors = topic.
+		Find(".topic-authors topic-authors__author").
+		Map(func(i int, s *goquery.Selection) string { return s.Text() })
+
 	return news, nil
 }

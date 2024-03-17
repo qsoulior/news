@@ -17,12 +17,11 @@ type newsSearch struct {
 }
 
 func NewNewsSearch(baseAPI string) *newsSearch {
-	client := httpclient.New(
-		httpclient.URL(baseAPI),
-	)
+	client := httpclient.New()
 
 	abstract := &newsAbstract{
-		client: client,
+		client:  client,
+		baseAPI: baseAPI,
 	}
 
 	search := &newsSearch{
@@ -43,7 +42,7 @@ type MatchResponse struct {
 }
 
 func (n *newsSearch) parseURLs(ctx context.Context, query string, page string) ([]*newsURL, error) {
-	u, _ := url.Parse("/search/v2/process")
+	u, _ := url.Parse(n.baseAPI + "/search/v2/process")
 	values := u.Query()
 	values.Set("query", query)
 	values.Set("from", page+"00")
