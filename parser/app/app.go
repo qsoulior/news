@@ -21,7 +21,7 @@ import (
 
 var wg sync.WaitGroup
 
-func Run(cfg *Config, consumerParser service.Parser, workerParser service.Parser) {
+func Run(cfg *Config, searchParser service.Parser, feedParser service.Parser) {
 	out := zerolog.NewConsoleWriter()
 	logger := zerolog.New(out).With().Timestamp().Logger()
 
@@ -66,9 +66,9 @@ func Run(cfg *Config, consumerParser service.Parser, workerParser service.Parser
 
 	// rabbit producer
 	rmqProducer := producer.New(rmqConn)
-	workerService := service.NewNews(service.NewsConfig{
+	feedService := service.NewNews(service.NewsConfig{
 		Repo:   newsRepo,
-		Parser: workerParser,
+		Parser: feedParser,
 
 		Producer:   rmqProducer,
 		Exchange:   "",
@@ -80,9 +80,9 @@ func Run(cfg *Config, consumerParser service.Parser, workerParser service.Parser
 	})
 
 	// rabbit consumer
-	consumerService := service.NewNews(service.NewsConfig{
+	searchService := service.NewNews(service.NewsConfig{
 		Repo:   newsRepo,
-		Parser: consumerParser,
+		Parser: searchParser,
 
 		Producer:   rmqProducer,
 		Exchange:   "",
@@ -90,13 +90,18 @@ func Run(cfg *Config, consumerParser service.Parser, workerParser service.Parser
 	})
 
 	consumerLog := logger.With().Str("name", "consumer").Logger()
-	runConsumer(sigCtx, &consumerLog, consumerService, rmqConn, queue)
+	runConsumer(sigCtx, &consumerLog, searchService, rmqConn, queue)
 	consumerLog.Info().Msg("started")
 
 	// worker
 	workerLog := logger.With().Str("name", "worker").Logger()
-	runWorker(sigCtx, &workerLog, workerService, pageService)
+	runWorker(sigCtx, &workerLog, feedService, pageService)
 	workerLog.Info().Msg("started")
+
+	// releaser
+	releaserLog := logger.With().Str("name", "releaser").Logger()
+	runReleaser(sigCtx, &releaserLog, feedService)
+	releaserLog.Info().Msg("started")
 
 	wg.Wait()
 }
@@ -162,7 +167,7 @@ func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News,
 }
 
 func runWorker(ctx context.Context, logger *zerolog.Logger, news service.News, page service.Page) {
-	worker := NewWorker(WorkerConfig{
+	worker := newWorker(workerConfig{
 		Delay:  5 * time.Second,
 		Logger: logger,
 		News:   news,
@@ -178,5 +183,20 @@ func runWorker(ctx context.Context, logger *zerolog.Logger, news service.News, p
 			return
 		}
 		logger.Error().Err(err).Msg("")
+	}()
+}
+
+func runReleaser(ctx context.Context, logger *zerolog.Logger, news service.News) {
+	releaser := newReleaser(releaserConfig{
+		Delay:  10 * time.Minute,
+		Logger: logger,
+		News:   news,
+	})
+
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+		releaser.Run(ctx)
+		logger.Info().Msg("graceful shutdown")
 	}()
 }

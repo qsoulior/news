@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/qsoulior/news/aggregator/entity"
@@ -45,20 +46,46 @@ func (n *news) Parse(ctx context.Context, query string, page string) (string, er
 			return "", fmt.Errorf("json.Marshal: %w", err)
 		}
 
-		err = n.Producer.Produce(ctx, n.Exchange, n.RoutingKey, rabbitmq.Message{
-			ContentType:  "application/json",
-			DeliveryMode: 2,
-			Body:         body,
-		})
+		err = n.store(ctx, body)
 		if err != nil {
-			// TODO: amqp.Produce error handling
-			if err := n.Repo.Create(ctx, string(body)); err != nil {
-				return "", fmt.Errorf("n.Repo.News.Create: %w", err)
-			}
-
-			return "", fmt.Errorf("n.AMQP.Producer.Produce: %w", err)
+			return "", err
 		}
 	}
 
 	return page, nil
+}
+
+func (n *news) Release(ctx context.Context) error {
+	for {
+		jsonStr, err := n.Repo.Pop(ctx)
+		if err != nil && !errors.Is(err, ErrNotExist) {
+			return fmt.Errorf("n.Repo.Pop: %w", err)
+		}
+
+		if jsonStr == "" {
+			return nil
+		}
+
+		err = n.store(ctx, []byte(jsonStr))
+		if err != nil {
+			return err
+		}
+	}
+}
+
+func (n *news) store(ctx context.Context, body []byte) error {
+	err := n.Producer.Produce(ctx, n.Exchange, n.RoutingKey, rabbitmq.Message{
+		ContentType:  "application/json",
+		DeliveryMode: 2,
+		Body:         body,
+	})
+
+	if err != nil {
+		err := n.Repo.Create(ctx, string(body))
+		if err != nil {
+			return fmt.Errorf("n.Repo.Create: %w", err)
+		}
+	}
+
+	return nil
 }

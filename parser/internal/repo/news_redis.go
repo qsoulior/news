@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/qsoulior/news/parser/pkg/redis"
+	rdb "github.com/redis/go-redis/v9"
 )
 
 type newsRedis struct {
@@ -26,6 +27,10 @@ func (n *newsRedis) Create(ctx context.Context, jsonStr string) error {
 func (n *newsRedis) Pop(ctx context.Context) (string, error) {
 	jsonStr, err := n.Client.LPop(ctx, "news").Result()
 	if err != nil {
+		if err == rdb.Nil {
+			return "", ErrNotExist
+		}
+
 		return "", fmt.Errorf("n.Client.Pop: %w", err)
 	}
 	return jsonStr, nil

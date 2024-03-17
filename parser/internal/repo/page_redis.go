@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/qsoulior/news/parser/pkg/redis"
-	redislib "github.com/redis/go-redis/v9"
+	rdb "github.com/redis/go-redis/v9"
 )
 
 type pageRedis struct {
@@ -19,7 +19,7 @@ func NewPageRedis(redis *redis.Redis) Page {
 func (p *pageRedis) Get(ctx context.Context) (string, error) {
 	page, err := p.Client.Get(ctx, "page").Result()
 	if err != nil {
-		if err == redislib.Nil {
+		if err == rdb.Nil {
 			return "", ErrNotExist
 		}
 

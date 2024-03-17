@@ -10,7 +10,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type WorkerConfig struct {
+type workerConfig struct {
 	Delay  time.Duration
 	Logger *zerolog.Logger
 
@@ -19,10 +19,10 @@ type WorkerConfig struct {
 }
 
 type worker struct {
-	WorkerConfig
+	workerConfig
 }
 
-func NewWorker(cfg WorkerConfig) *worker {
+func newWorker(cfg workerConfig) *worker {
 	return &worker{cfg}
 }
 
