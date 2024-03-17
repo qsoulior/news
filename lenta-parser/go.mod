@@ -1,4 +1,4 @@
-module github.com/qsoulior/news/iz-parser
+module github.com/qsoulior/news/lenta-parser
 
 go 1.22.0
 

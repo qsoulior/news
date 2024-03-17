@@ -2,12 +2,9 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/brianvoe/gofakeit/v7"
@@ -64,50 +61,15 @@ func (n *newsAbstract) parseOne(ctx context.Context, url string) (*entity.News, 
 	}
 
 	defer resp.Body.Close()
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	_, err = goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("goquery.NewDocumentFromReader: %w", err)
 	}
 
 	news := &entity.News{
-		Source: "iz.ru",
+		Source: "lenta.ru",
 		Link:   resp.Request.URL.String(),
 	}
 
-	article := doc.Find("[role=\"article\"]")
-
-	news.Title = article.Find("[itemprop=\"headline\"] span").Text()
-	news.Description = article.Find("[itemprop=\"alternativeHeadline\"]").Text()
-	news.Authors = article.
-		Find(".article_page__left__top__author [itemprop=\"name\"]").
-		Map(func(i int, s *goquery.Selection) string { return s.Text() })
-
-	datetimeStr, ok := article.Find(".article_page__left__top__time time").Attr("datetime")
-	if !ok {
-		return nil, errors.New("empty datetime")
-	}
-	datetimeLayout := "2006-01-02T15:04:05Z"
-	news.PublishedAt, err = time.Parse(datetimeLayout, datetimeStr)
-	if err != nil {
-		return nil, fmt.Errorf("time.Parse: %w", err)
-	}
-
-	news.Tags = article.Find(".article_page__left__top__left__hash_tags a").
-		Map(func(i int, s *goquery.Selection) string { return s.Text() })
-
-	news.Categories = article.Find(".rubrics_btn a").Map(func(i int, s *goquery.Selection) string {
-		return s.Text()
-	})
-
-	var text strings.Builder
-	textItems := article.Find("[itemprop=\"articleBody\"] p")
-	textItems.Each(func(i int, s *goquery.Selection) {
-		text.WriteString(s.Text())
-		if i < textItems.Size()-1 {
-			text.WriteRune('\n')
-		}
-	})
-
-	news.Content = text.String()
 	return news, nil
 }
