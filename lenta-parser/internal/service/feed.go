@@ -60,9 +60,9 @@ type TopicResponse struct {
 	Topics []Topic `json:"topics"`
 }
 
-func (n *newsFeed) parseURLs(ctx context.Context, query string, page string) ([]newsURL, error) {
+func (n *newsFeed) parseURLs(ctx context.Context, query string, page string) ([]*newsURL, error) {
 	// rubrics
-	rubricResp, err := n.client.Get(ctx, "/rubrics", map[string]string{
+	rubricResp, err := n.client.Get(ctx, "/v3/rubrics", map[string]string{
 		"User-Agent": gofakeit.UserAgent(),
 	})
 	if err != nil {
@@ -78,7 +78,7 @@ func (n *newsFeed) parseURLs(ctx context.Context, query string, page string) ([]
 	}
 
 	// topics
-	u, _ := url.Parse("/topics/by_rubrics")
+	u, _ := url.Parse("/v3/topics/by_rubrics")
 	values := u.Query()
 
 	for _, rubric := range rubricData.Rubrics {
@@ -104,12 +104,12 @@ func (n *newsFeed) parseURLs(ctx context.Context, query string, page string) ([]
 		return nil, fmt.Errorf("httpresponse.JSON[TopicResponse]: %w", err)
 	}
 
-	urls := make([]newsURL, 0, len(topicData.Topics))
-	for _, item := range topicData.Topics {
-		if item.Headline.Type == "news" {
-			urls = append(urls, newsURL{
-				url:         item.Headline.Links.Self,
-				publishedAt: time.Unix(int64(item.Headline.Info.Modified), 0),
+	urls := make([]*newsURL, 0, len(topicData.Topics))
+	for _, topic := range topicData.Topics {
+		if topic.Headline.Type == "news" {
+			urls = append(urls, &newsURL{
+				URL:         topic.Headline.Links.Self,
+				PublishedAt: time.Unix(int64(topic.Headline.Info.Modified), 0),
 			})
 		}
 	}

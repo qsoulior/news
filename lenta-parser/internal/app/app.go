@@ -6,8 +6,8 @@ import (
 )
 
 func Run(cfg *Config) {
-	consumerParser := service.NewNewsSearch(cfg.API.URL)
-	workerParser := service.NewNewsFeed(cfg.API.URL)
+	searchParser := service.NewNewsSearch(cfg.API.SearchURL)
+	feedParser := service.NewNewsFeed(cfg.API.FeedURL)
 
 	app.Run(
 		&app.Config{
@@ -15,7 +15,7 @@ func Run(cfg *Config) {
 			RabbitMQ: app.ConfigRabbitMQ(cfg.RabbitMQ),
 			Redis:    app.ConfigRedis(cfg.Redis),
 		},
-		consumerParser,
-		workerParser,
+		searchParser,
+		feedParser,
 	)
 }

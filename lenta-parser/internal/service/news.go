@@ -14,12 +14,12 @@ import (
 )
 
 type newsURL struct {
-	url         string
-	publishedAt time.Time
+	URL         string
+	PublishedAt time.Time
 }
 
 type news interface {
-	parseURLs(ctx context.Context, query string, page string) ([]newsURL, error)
+	parseURLs(ctx context.Context, query string, page string) ([]*newsURL, error)
 }
 
 type newsAbstract struct {
@@ -54,8 +54,8 @@ func (n *newsAbstract) Parse(ctx context.Context, query string, page string) ([]
 	return news, strconv.Itoa(nextPage + 1), nil
 }
 
-func (n *newsAbstract) parseOne(ctx context.Context, url newsURL) (*entity.News, error) {
-	resp, err := n.client.Get(ctx, url.url, map[string]string{
+func (n *newsAbstract) parseOne(ctx context.Context, url *newsURL) (*entity.News, error) {
+	resp, err := n.client.Get(ctx, url.URL, map[string]string{
 		"User-Agent": gofakeit.UserAgent(),
 	})
 	if err != nil {
@@ -75,7 +75,7 @@ func (n *newsAbstract) parseOne(ctx context.Context, url newsURL) (*entity.News,
 	news := &entity.News{
 		Source:      "lenta.ru",
 		Link:        resp.Request.URL.String(),
-		PublishedAt: url.publishedAt,
+		PublishedAt: url.PublishedAt,
 	}
 
 	// TODO
