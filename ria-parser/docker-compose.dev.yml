@@ -1,0 +1,7 @@
+services:
+  ria-cache:
+    image: redis:7.2-alpine3.19
+    ports:
+      - 4004:6379
+    environment:
+      REDIS_PASSWORD: test123
