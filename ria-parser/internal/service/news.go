@@ -15,7 +15,7 @@ type newsURL struct {
 }
 
 type news interface {
-	parseURLs(ctx context.Context, query string, page string) ([]*newsURL, error)
+	parseURLs(ctx context.Context, query string, page string) ([]string, error)
 }
 
 type newsAbstract struct {
@@ -52,6 +52,6 @@ func (n *newsAbstract) Parse(ctx context.Context, query string, page string) ([]
 	return news, strconv.Itoa(nextPage + 1), nil
 }
 
-func (n *newsAbstract) parseOne(ctx context.Context, url *newsURL) (*entity.News, error) {
+func (n *newsAbstract) parseOne(ctx context.Context, url string) (*entity.News, error) {
 	return nil, nil
 }
