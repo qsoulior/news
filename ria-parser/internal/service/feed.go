@@ -59,13 +59,9 @@ func (n *newsFeed) Parse(ctx context.Context, query string, page string) ([]enti
 		return nil, "", err
 	}
 
-	news := make([]entity.News, 0, len(urls))
-	for _, url := range urls {
-		newsItem, err := n.parseOne(ctx, url)
-		if err != nil {
-			continue
-		}
-		news = append(news, *newsItem)
+	news, err := n.parseMany(ctx, urls)
+	if err != nil {
+		return nil, "", err
 	}
 
 	nextPage := pageObj.AddDate(0, 0, -1).Format(PAGE_LAYOUT)

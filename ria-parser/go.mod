@@ -14,6 +14,7 @@ require (
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/qsoulior/news/aggregator v0.0.0-00010101000000-000000000000
 	github.com/qsoulior/news/parser v0.0.0-00010101000000-000000000000
+	golang.org/x/sync v0.6.0
 )
 
 require (

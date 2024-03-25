@@ -5,4 +5,5 @@ use (
 	iz-parser
 	lenta-parser
 	newsdata-parser
+	ria-parser
 )

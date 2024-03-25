@@ -41,13 +41,9 @@ func (n *newsSearch) Parse(ctx context.Context, query string, page string) ([]en
 		return nil, "", err
 	}
 
-	news := make([]entity.News, 0, len(urls))
-	for _, url := range urls {
-		newsItem, err := n.parseOne(ctx, url)
-		if err != nil {
-			continue
-		}
-		news = append(news, *newsItem)
+	news, err := n.parseMany(ctx, urls)
+	if err != nil {
+		return nil, "", err
 	}
 
 	return news, "", nil
