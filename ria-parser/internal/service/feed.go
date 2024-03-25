@@ -92,7 +92,7 @@ func (n *newsFeed) parseURLs(ctx context.Context, path string) ([]string, error)
 		return nil, fmt.Errorf("n.page.Navigate: %w", err)
 	}
 
-	urls, err := n.parseView(page, 0)
+	urls, err := n.parseView(page)
 	if err != nil {
 		return nil, fmt.Errorf("n.parseView: %w", err)
 	}

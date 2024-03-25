@@ -20,8 +20,6 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-const BASE_COUNT = 20
-
 type newsURL struct {
 	URL         string
 	PublishedAt time.Time
@@ -148,8 +146,8 @@ func (n *news) parseMany(ctx context.Context, urls []string) ([]entity.News, err
 	return news, nil
 }
 
-func (n *news) parseView(page *rod.Page, limit int) ([]string, error) {
-	err := n.loadView(page, limit)
+func (n *news) parseView(page *rod.Page) ([]string, error) {
+	err := n.loadView(page)
 	if err != nil {
 		return nil, fmt.Errorf("n.loadView: %w", err)
 	}
@@ -182,7 +180,7 @@ func (n *news) parseView(page *rod.Page, limit int) ([]string, error) {
 	return urls, nil
 }
 
-func (n *news) loadView(page *rod.Page, limit int) error {
+func (n *news) loadView(page *rod.Page) error {
 	listMore, err := page.Element(".list-more")
 	if err != nil {
 		return fmt.Errorf("n.page.Element: %w", err)
@@ -198,7 +196,6 @@ func (n *news) loadView(page *rod.Page, limit int) error {
 		return fmt.Errorf("listMore.Click: %w", err)
 	}
 
-	count := BASE_COUNT * 2
 	for {
 		err = listMore.Timeout(5 * time.Second).WaitStableRAF()
 		if err != nil {
@@ -213,7 +210,7 @@ func (n *news) loadView(page *rod.Page, limit int) error {
 			return fmt.Errorf("listMore.Visible: %w", err)
 		}
 
-		if !visible || (limit > 0 && count >= limit) {
+		if !visible {
 			break
 		}
 

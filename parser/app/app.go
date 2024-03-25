@@ -193,7 +193,7 @@ func runWorker(ctx context.Context, logger *zerolog.Logger, news service.News, p
 
 func runReleaser(ctx context.Context, logger *zerolog.Logger, news service.News) {
 	releaser := newReleaser(releaserConfig{
-		Delay:  30 * time.Second,
+		Delay:  10 * time.Minute,
 		Logger: logger,
 		News:   news,
 	})
