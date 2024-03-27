@@ -27,7 +27,7 @@ func NewNews(cfg NewsConfig) News {
 }
 
 func (n *news) Create(ctx context.Context, news entity.News) error {
-	if err := n.Repo.Create(ctx, news); err != nil {
+	if err := n.Repo.ReplaceOrCreate(ctx, news); err != nil {
 		return fmt.Errorf("n.repo.Create: %w", err)
 	}
 

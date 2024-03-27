@@ -29,6 +29,38 @@ func (n *newsMongo) Create(ctx context.Context, news entity.News) error {
 	return nil
 }
 
+func (n *newsMongo) ReplaceOrCreate(ctx context.Context, news entity.News) error {
+	session, err := n.collection.Database().Client().StartSession()
+	if err != nil {
+		return fmt.Errorf("client.StartSession: %w", err)
+	}
+	defer session.EndSession(ctx)
+
+	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (any, error) {
+		resultNews := new(entity.News)
+		err := n.collection.FindOne(ctx, bson.M{"link": news.Link}).Decode(resultNews)
+		if err == mongo.ErrNoDocuments {
+			return n.collection.InsertOne(ctx, resultNews)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		if news.PublishedAt.After(resultNews.PublishedAt) {
+			return n.collection.ReplaceOne(ctx, bson.M{"link": resultNews.Link}, news)
+		}
+
+		return nil, nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("session.WithTransaction: %w", err)
+	}
+
+	return nil
+}
+
 func (n *newsMongo) CreateMany(ctx context.Context, news []entity.News) error {
 	documents := make([]any, len(news))
 	for i, v := range news {
