@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 type newsMongo struct {
@@ -36,11 +37,14 @@ func (n *newsMongo) ReplaceOrCreate(ctx context.Context, news entity.News) error
 	}
 	defer session.EndSession(ctx)
 
+	wc := writeconcern.Majority()
+	txnOptions := options.Transaction().SetWriteConcern(wc)
+
 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (any, error) {
 		resultNews := new(entity.News)
 		err := n.collection.FindOne(ctx, bson.M{"link": news.Link}).Decode(resultNews)
 		if err == mongo.ErrNoDocuments {
-			return n.collection.InsertOne(ctx, resultNews)
+			return n.collection.InsertOne(ctx, news)
 		}
 
 		if err != nil {
@@ -52,7 +56,7 @@ func (n *newsMongo) ReplaceOrCreate(ctx context.Context, news entity.News) error
 		}
 
 		return nil, nil
-	})
+	}, txnOptions)
 
 	if err != nil {
 		return fmt.Errorf("session.WithTransaction: %w", err)
