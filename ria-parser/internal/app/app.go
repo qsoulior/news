@@ -2,11 +2,11 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/go-rod/rod"
 	"github.com/qsoulior/news/parser/app"
+	"github.com/qsoulior/news/parser/pkg/httpclient"
 	"github.com/qsoulior/news/ria-parser/internal/service"
 )
 
@@ -17,20 +17,20 @@ func Run(cfg *Config) {
 	defer cancel()
 
 	browser := rod.New().Context(ctx)
-	err := browser.Connect()
-	if err != nil {
-		log.Fatal(fmt.Errorf("browser.Connect: %w", err))
+	if err := browser.Connect(); err != nil {
+		log.Fatalf("failed to init browser: %s", err)
 	}
 
 	defer func() {
-		err := browser.Close()
-		if err != nil {
-			log.Println(fmt.Errorf("browser.Close: %w", err))
+		if err := browser.Close(); err != nil {
+			log.Fatalf("failed to close browser: %s", err)
 		}
 	}()
 
-	searchParser := service.NewNewsSearch(cfg.API.SearchURL, appID, browser)
-	feedParser := service.NewNewsFeed(cfg.API.FeedURL, appID, browser)
+	client := httpclient.New()
+
+	searchParser := service.NewNewsSearch(appID, client, cfg.API.URL, browser)
+	archiveParser := service.NewNewsArchive(appID, client, cfg.API.URL, browser)
 
 	app.Run(
 		&app.Config{
@@ -39,6 +39,6 @@ func Run(cfg *Config) {
 			Redis:    app.ConfigRedis(cfg.Redis),
 		},
 		searchParser,
-		feedParser,
+		archiveParser,
 	)
 }
