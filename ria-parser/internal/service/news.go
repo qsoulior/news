@@ -5,16 +5,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
-	"golang.org/x/sync/semaphore"
 )
 
 type news struct {
@@ -95,42 +92,17 @@ func (n *news) parseOne(ctx context.Context, url string) (*entity.News, error) {
 }
 
 func (n *news) parseMany(ctx context.Context, urls []string) ([]entity.News, error) {
-	newsCh := make(chan *entity.News, len(urls))
 	news := make([]entity.News, 0, len(urls))
-
-	var wg sync.WaitGroup
-	maxProcs := int64(runtime.GOMAXPROCS(0)) * 2
-	sem := semaphore.NewWeighted(maxProcs)
-
-	cancelCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	for _, url := range urls {
-		if err := sem.Acquire(ctx, 1); err != nil {
-			return nil, fmt.Errorf("sem.Acquire: %w", err)
+		if err := ctx.Err(); err != nil {
+			return nil, err
 		}
 
-		go func(ctx context.Context) {
-			defer sem.Release(1)
-			wg.Add(1)
-			defer wg.Done()
-			newsItem, err := n.parseOne(ctx, url)
-			if err != nil {
-				// TODO: Logger for parseOne
-				log.Println(err)
-			} else {
-				newsCh <- newsItem
-			}
-		}(cancelCtx)
-
-	}
-
-	go func() {
-		wg.Wait()
-		close(newsCh)
-	}()
-
-	for newsItem := range newsCh {
+		newsItem, err := n.parseOne(ctx, url)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
 		news = append(news, *newsItem)
 	}
 

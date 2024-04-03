@@ -81,9 +81,14 @@ func (n *newsView) parseView(page *rod.Page) ([]string, error) {
 }
 
 func (n *newsView) loadView(page *rod.Page) error {
+	err := page.WaitLoad()
+	if err != nil {
+		return fmt.Errorf("page.WaitLoad: %w", err)
+	}
+
 	listMore, err := page.Element(".list-more")
 	if err != nil {
-		return fmt.Errorf("n.page.Element: %w", err)
+		return fmt.Errorf("page.Element: %w", err)
 	}
 
 	err = listMore.Timeout(5 * time.Second).WaitStableRAF()

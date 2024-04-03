@@ -5,6 +5,8 @@ import (
 )
 
 type Queue[T any] interface {
+	Len() int
+	Cap() int
 	Push(values ...T)
 	Pop() (T, bool)
 }
@@ -17,12 +19,20 @@ type queue[T any] struct {
 	mx sync.RWMutex
 }
 
-func NewQueue[T any](capacity int) Queue[T] {
+func New[T any](capacity int) Queue[T] {
 	return &queue[T]{
 		ch:       make(chan T, capacity),
 		capacity: capacity,
 		length:   0,
 	}
+}
+
+func (q *queue[T]) Len() int {
+	return q.length
+}
+
+func (q *queue[T]) Cap() int {
+	return q.capacity
 }
 
 func (q *queue[T]) Push(values ...T) {

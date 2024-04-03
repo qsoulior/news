@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 
 	"github.com/go-rod/rod"
@@ -46,7 +47,7 @@ func (n *newsSearch) Parse(ctx context.Context, query string, page string) ([]en
 
 	news, err := n.parseMany(ctx, urls)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("n.parseMany: %w", err)
 	}
 
 	return news, "", nil
