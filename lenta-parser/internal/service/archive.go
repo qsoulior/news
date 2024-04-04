@@ -5,32 +5,55 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
+	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 	"github.com/qsoulior/news/parser/pkg/httpclient/httpresponse"
 )
 
-type newsFeed struct {
-	*newsAbstract
+type newsArchive struct {
+	*news
+	URL string
 }
 
-func NewNewsFeed(baseAPI string, appID string) *newsFeed {
-	client := httpclient.New()
-
-	abstract := &newsAbstract{
-		client:  client,
-		baseAPI: baseAPI,
-		appID:   appID,
+func NewNewsArchive(appID string, url string, client *httpclient.Client) *newsArchive {
+	news := &news{
+		appID:  appID,
+		client: client,
 	}
 
-	feed := &newsFeed{
-		newsAbstract: abstract,
+	archive := &newsArchive{
+		news: news,
+		URL:  url,
 	}
 
-	abstract.news = feed
-	return feed
+	return archive
+}
+
+func (n *newsArchive) Parse(ctx context.Context, query string, page string) ([]entity.News, string, error) {
+	urls, err := n.parseURLs(ctx, page)
+	if err != nil {
+		return nil, "", err
+	}
+
+	news, err := n.parseMany(ctx, urls)
+	if err != nil {
+		return nil, "", fmt.Errorf("n.parseMany: %w", err)
+	}
+
+	if page == "" {
+		return news, "1", nil
+	}
+
+	nextPage, err := strconv.Atoi(page)
+	if err != nil {
+		return news, "0", nil
+	}
+
+	return news, strconv.Itoa(nextPage + 1), nil
 }
 
 type RubricDTO struct {
@@ -60,9 +83,9 @@ type TopicResponse struct {
 	Topics []Topic `json:"topics"`
 }
 
-func (n *newsFeed) parseURLs(ctx context.Context, query string, page string) ([]*newsURL, error) {
+func (n *newsArchive) parseURLs(ctx context.Context, page string) ([]*newsURL, error) {
 	// rubrics
-	u, _ := url.Parse(n.baseAPI + "/v3/rubrics")
+	u, _ := url.Parse(n.URL + "/v3/rubrics")
 	rubricResp, err := n.client.Get(ctx, u.String(), map[string]string{
 		"User-Agent": gofakeit.UserAgent(),
 	})
@@ -79,7 +102,7 @@ func (n *newsFeed) parseURLs(ctx context.Context, query string, page string) ([]
 	}
 
 	// topics
-	u, _ = url.Parse(n.baseAPI + "/v3/topics/by_rubrics")
+	u, _ = url.Parse(n.URL + "/v3/topics/by_rubrics")
 	values := u.Query()
 
 	for _, rubric := range rubricData.Rubrics {
