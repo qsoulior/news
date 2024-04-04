@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/DataHenHQ/useragent"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/brianvoe/gofakeit/v7"
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 	"github.com/qsoulior/news/parser/pkg/httpclient/httpresponse"
@@ -71,8 +71,13 @@ func (n *newsArchive) parseURLs(ctx context.Context, page string) ([]string, err
 	reqData.Set("view_display_id", "page_feed")
 	reqData.Set("page", page)
 
+	ua, err := useragent.Desktop()
+	if err != nil {
+		return nil, fmt.Errorf("useragent.Desktop: %w", err)
+	}
+
 	resp, err := n.client.Post(ctx, u.String(), strings.NewReader(reqData.Encode()), map[string]string{
-		"User-Agent":   gofakeit.UserAgent(),
+		"User-Agent":   ua,
 		"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
 	})
 

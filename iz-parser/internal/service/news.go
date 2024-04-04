@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DataHenHQ/useragent"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/brianvoe/gofakeit/v7"
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 )
@@ -21,8 +21,13 @@ type news struct {
 }
 
 func (n *news) parseOne(ctx context.Context, url string) (*entity.News, error) {
+	ua, err := useragent.Desktop()
+	if err != nil {
+		return nil, fmt.Errorf("useragent.Desktop: %w", err)
+	}
+
 	resp, err := n.client.Get(ctx, url, map[string]string{
-		"User-Agent": gofakeit.UserAgent(),
+		"User-Agent": ua,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("n.client.Get: %w", err)
