@@ -21,7 +21,7 @@ import (
 
 var wg sync.WaitGroup
 
-func Run(cfg *Config, searchParser service.Parser, feedParser service.Parser) {
+func Run(cfg *Config, searchParser service.Parser, archiveParser service.Parser) {
 	zerolog.DurationFieldUnit = time.Second
 	out := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
 		w.TimeFormat = time.RFC3339
@@ -47,9 +47,10 @@ func Run(cfg *Config, searchParser service.Parser, feedParser service.Parser) {
 	redisLog.Info().Str("url", cfg.Redis.URL).Msg("started")
 
 	defer func() {
+		// redis graceful shutdown
 		err := redis.Close()
 		if err != nil {
-			redisLog.Error().Err(err).Msg("")
+			redisLog.Error().Err(err).Msg("graceful shutdown")
 			return
 		}
 		redisLog.Info().Msg("graceful shutdown")
@@ -69,9 +70,9 @@ func Run(cfg *Config, searchParser service.Parser, feedParser service.Parser) {
 
 	// rabbit producer
 	rmqProducer := producer.New(rmqConn)
-	feedService := service.NewNews(service.NewsConfig{
+	archiveService := service.NewNews(service.NewsConfig{
 		Repo:   newsRepo,
-		Parser: feedParser,
+		Parser: archiveParser,
 
 		Producer:   rmqProducer,
 		Exchange:   "",
@@ -100,12 +101,12 @@ func Run(cfg *Config, searchParser service.Parser, feedParser service.Parser) {
 
 	// worker
 	workerLog := logger.With().Str("module", "worker").Logger()
-	runWorker(sigCtx, &workerLog, feedService, pageService)
+	runWorker(sigCtx, &workerLog, archiveService, pageService)
 	workerLog.Info().Msg("started")
 
 	// releaser
 	releaserLog := logger.With().Str("module", "releaser").Logger()
-	runReleaser(sigCtx, &releaserLog, feedService)
+	runReleaser(sigCtx, &releaserLog, archiveService)
 	releaserLog.Info().Msg("started")
 
 	wg.Wait()
@@ -138,10 +139,13 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, url string, queueName s
 		<-ctx.Done()
 		logger.Info().Msg("term signal accepted")
 
+		// rabbit conn graceful shutdown
 		err := rmqConn.Close()
 		if err != nil {
 			logger.Error().Err(err).Msg("graceful shutdown")
+			return
 		}
+		logger.Info().Msg("graceful shutdown")
 	}()
 
 	return rmqConn, queue.Name, nil
@@ -161,11 +165,11 @@ func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News,
 				return
 			case <-timer.C:
 				err := rmqConsumer.Consume(ctx, queue)
-				if err == nil {
-					logger.Info().Msg("graceful shutdown")
+				if err != nil {
+					logger.Error().Err(err).Msg("")
 					return
 				}
-				logger.Error().Err(err).Msg("")
+				logger.Info().Msg("graceful shutdown")
 			}
 		}
 	}()
@@ -183,11 +187,11 @@ func runWorker(ctx context.Context, logger *zerolog.Logger, news service.News, p
 		wg.Add(1)
 		defer wg.Done()
 		err := worker.Run(ctx)
-		if err == nil {
-			logger.Info().Msg("graceful shutdown")
+		if err != nil {
+			logger.Error().Err(err).Msg("")
 			return
 		}
-		logger.Error().Err(err).Msg("")
+		logger.Info().Msg("graceful shutdown")
 	}()
 }
 

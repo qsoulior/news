@@ -49,12 +49,13 @@ func Run(cfg *Config) {
 	mongoLog.Info().Str("uri", cfg.MongoDB.URI).Msg("started")
 
 	defer func() {
+		// mongo graceful shutdown
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
 		err := mongo.Disconnect(ctx)
 		if err != nil {
-			mongoLog.Error().Err(err).Msg("")
+			mongoLog.Error().Err(err).Msg("graceful shutdown")
 			return
 		}
 		mongoLog.Info().Msg("graceful shutdown")
@@ -121,6 +122,7 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*r
 		<-ctx.Done()
 		logger.Info().Msg("term signal accepted")
 
+		// rabbit conn graceful shutdown
 		err := rmqConn.Close()
 		if err != nil {
 			logger.Error().Err(err).Msg("graceful shutdown")
@@ -146,11 +148,11 @@ func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News,
 				return
 			case <-timer.C:
 				err := rmqConsumer.Consume(ctx, "news")
-				if err == nil {
-					logger.Info().Msg("graceful shutdown")
+				if err != nil {
+					logger.Error().Err(err).Msg("")
 					return
 				}
-				logger.Error().Err(err).Msg("")
+				logger.Info().Msg("graceful shutdown")
 			}
 		}
 	}()
@@ -172,6 +174,7 @@ func runServer(ctx context.Context, logger *zerolog.Logger, news service.News, c
 			logger.Error().Err(err).Msg("")
 		}
 
+		// http server graceful shutdown
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
