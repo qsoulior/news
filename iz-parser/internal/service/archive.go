@@ -7,37 +7,31 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/brianvoe/gofakeit/v7"
+	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 	"github.com/qsoulior/news/parser/pkg/httpclient/httpresponse"
 )
 
-type newsFeed struct {
-	*newsAbstract
+type newsArchive struct {
+	*news
 }
 
-func NewNewsFeed(baseAPI string, appID string) *newsFeed {
-	client := httpclient.New(
-		httpclient.URL(baseAPI),
-		httpclient.Headers(map[string]string{
-			"Referer": "https://iz.ru/feed",
-		}),
-	)
-
-	abstract := &newsAbstract{
-		client: client,
+func NewNewsArchive(appID string, client *httpclient.Client) *newsArchive {
+	news := &news{
 		appID:  appID,
+		client: client,
 	}
 
-	feed := &newsFeed{
-		newsAbstract: abstract,
+	archive := &newsArchive{
+		news: news,
 	}
 
-	abstract.news = feed
-	return feed
+	return archive
 }
 
 type ViewDTO struct {
@@ -46,7 +40,30 @@ type ViewDTO struct {
 	Data    string `json:"data"`
 }
 
-func (n *newsFeed) parseURLs(ctx context.Context, query string, page string) ([]string, error) {
+func (n *newsArchive) Parse(ctx context.Context, query string, page string) ([]entity.News, string, error) {
+	urls, err := n.parseURLs(ctx, page)
+	if err != nil {
+		return nil, "", err
+	}
+
+	news, err := n.parseMany(ctx, urls)
+	if err != nil {
+		return nil, "", fmt.Errorf("n.parseMany: %w", err)
+	}
+
+	if page == "" {
+		return news, "1", nil
+	}
+
+	nextPage, err := strconv.Atoi(page)
+	if err != nil {
+		return news, "0", nil
+	}
+
+	return news, strconv.Itoa(nextPage + 1), nil
+}
+
+func (n *newsArchive) parseURLs(ctx context.Context, page string) ([]string, error) {
 	u, _ := url.Parse("/views/ajax?_wrapper_format=drupal_ajax")
 
 	reqData := make(url.Values, 3)

@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -15,44 +15,12 @@ import (
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 )
 
-type news interface {
-	parseURLs(ctx context.Context, query string, page string) ([]string, error)
-}
-
-type newsAbstract struct {
-	news
-	client *httpclient.Client
+type news struct {
 	appID  string
+	client *httpclient.Client
 }
 
-func (n *newsAbstract) Parse(ctx context.Context, query string, page string) ([]entity.News, string, error) {
-	urls, err := n.parseURLs(ctx, query, page)
-	if err != nil {
-		return nil, "", err
-	}
-
-	news := make([]entity.News, 0, len(urls))
-	for _, url := range urls {
-		newsItem, err := n.parseOne(ctx, url)
-		if err != nil {
-			continue
-		}
-		news = append(news, *newsItem)
-	}
-
-	if page == "" {
-		return news, "1", nil
-	}
-
-	nextPage, err := strconv.Atoi(page)
-	if err != nil {
-		return news, "0", nil
-	}
-
-	return news, strconv.Itoa(nextPage + 1), nil
-}
-
-func (n *newsAbstract) parseOne(ctx context.Context, url string) (*entity.News, error) {
+func (n *news) parseOne(ctx context.Context, url string) (*entity.News, error) {
 	resp, err := n.client.Get(ctx, url, map[string]string{
 		"User-Agent": gofakeit.UserAgent(),
 	})
@@ -110,5 +78,23 @@ func (n *newsAbstract) parseOne(ctx context.Context, url string) (*entity.News, 
 	})
 
 	news.Content = text.String()
+	return news, nil
+}
+
+func (n *news) parseMany(ctx context.Context, urls []string) ([]entity.News, error) {
+	news := make([]entity.News, 0, len(urls))
+	for _, url := range urls {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		newsItem, err := n.parseOne(ctx, url)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		news = append(news, *newsItem)
+	}
+
 	return news, nil
 }

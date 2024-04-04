@@ -8,41 +8,48 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/brianvoe/gofakeit/v7"
+	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 )
 
 type newsSearch struct {
-	*newsAbstract
+	*news
 }
 
-func NewNewsSearch(baseAPI string, appID string) *newsSearch {
-	client := httpclient.New(
-		httpclient.URL(baseAPI),
-		httpclient.Headers(map[string]string{
-			"Referer": "https://iz.ru/feed",
-		}),
-	)
-
-	abstract := &newsAbstract{
-		client: client,
+func NewNewsSearch(appID string, client *httpclient.Client) *newsSearch {
+	news := &news{
 		appID:  appID,
+		client: client,
 	}
 
 	search := &newsSearch{
-		newsAbstract: abstract,
+		news: news,
 	}
 
-	abstract.news = search
 	return search
 }
 
-func (n *newsSearch) parseURLs(ctx context.Context, query string, page string) ([]string, error) {
+func (n *newsSearch) Parse(ctx context.Context, query string, page string) ([]entity.News, string, error) {
+	urls, err := n.parseURLs(ctx, query, page)
+	if err != nil {
+		return nil, "", err
+	}
+
+	news, err := n.parseMany(ctx, urls)
+	if err != nil {
+		return nil, "", fmt.Errorf("n.parseMany: %w", err)
+	}
+
+	return news, "", nil
+}
+
+func (n *newsSearch) parseURLs(ctx context.Context, query string, from string) ([]string, error) {
 	u, _ := url.Parse("/search")
 	values := u.Query()
 	values.Set("text", query)
 	values.Set("sort", "0")
 	values.Set("type", "1")
-	values.Set("from", page+"0")
+	values.Set("from", from)
 	u.RawQuery = values.Encode()
 
 	resp, err := n.client.Get(ctx, u.String(), map[string]string{
