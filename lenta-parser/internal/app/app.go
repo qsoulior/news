@@ -10,8 +10,8 @@ func Run(cfg *Config) {
 	appID := "lenta"
 
 	client := httpclient.New()
-	searchParser := service.NewNewsSearch(appID, cfg.API.SearchURL, client)
-	archiveParser := service.NewNewsArchive(appID, cfg.API.FeedURL, client)
+	searchParser := service.NewNewsSearch(appID, cfg.API.Search.URL, client)
+	archiveParser := service.NewNewsArchive(appID, cfg.API.Archive.URL, client)
 
 	app.Run(
 		&app.Config{

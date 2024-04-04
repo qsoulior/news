@@ -14,8 +14,12 @@ type (
 	}
 
 	ConfigAPI struct {
-		FeedURL   string `yaml:"feed_url"`
-		SearchURL string `yaml:"search_url"`
+		Search struct {
+			URL string `yaml:"url"`
+		} `yaml:"search"`
+		Archive struct {
+			URL string `yaml:"url"`
+		} `yaml:"archive"`
 	}
 
 	ConfigRabbitMQ struct {
