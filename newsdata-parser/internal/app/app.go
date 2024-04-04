@@ -3,22 +3,18 @@ package app
 import (
 	"github.com/qsoulior/news/newsdata-parser/internal/service"
 	"github.com/qsoulior/news/parser/app"
+	"github.com/qsoulior/news/parser/pkg/httpclient"
 )
 
 func Run(cfg *Config) {
 	appID := "newsdata"
 
-	searchParser := service.NewNews(service.NewsConfig{
-		AppID:     appID,
-		BaseAPI:   cfg.API.Consumer.URL,
-		AccessKey: cfg.API.Consumer.AccessKey,
-	})
+	client := httpclient.New(
+		httpclient.URL(cfg.API.URL),
+	)
 
-	feedParser := service.NewNews(service.NewsConfig{
-		AppID:     appID,
-		BaseAPI:   cfg.API.Worker.URL,
-		AccessKey: cfg.API.Worker.AccessKey,
-	})
+	searchParser := service.NewNews(appID, cfg.API.Search.AccessKey, client)
+	archiveParser := service.NewNews(appID, cfg.API.Archive.AccessKey, client)
 
 	app.Run(
 		&app.Config{
@@ -27,6 +23,6 @@ func Run(cfg *Config) {
 			Redis:    app.ConfigRedis(cfg.Redis),
 		},
 		searchParser,
-		feedParser,
+		archiveParser,
 	)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/qsoulior/news/aggregator/entity"
@@ -17,16 +18,34 @@ const (
 )
 
 type NewsDTO struct {
-	ArticleID   string    `json:"article_id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Link        string    `json:"link"`
-	SourceID    string    `json:"source_id"`
-	PubDate     time.Time `json:"pub_date"`
-	Creator     []string  `json:"creator"`
-	Keywords    []string  `json:"keywords"`
-	Categories  []string  `json:"categories"`
-	Content     string    `json:"content"`
+	ArticleID   string      `json:"article_id"`
+	Title       string      `json:"title"`
+	Description string      `json:"description"`
+	Link        string      `json:"link"`
+	SourceID    string      `json:"source_id"`
+	PubDate     NewsPubDate `json:"pubDate"`
+	Creator     []string    `json:"creator"`
+	Keywords    []string    `json:"keywords"`
+	Categories  []string    `json:"category"`
+	Content     string      `json:"content"`
+}
+
+type NewsPubDate time.Time
+
+func (p *NewsPubDate) UnmarshalJSON(b []byte) error {
+	var t time.Time
+
+	s := strings.Trim(string(b), "\"")
+	if s != "null" {
+		var err error
+		t, err = time.Parse(time.DateTime, s)
+		if err != nil {
+			return err
+		}
+	}
+
+	*p = NewsPubDate(t)
+	return nil
 }
 
 func (dto *NewsDTO) Entity() *entity.News {
@@ -35,7 +54,7 @@ func (dto *NewsDTO) Entity() *entity.News {
 		Description: dto.Description,
 		Link:        dto.Link,
 		Source:      dto.SourceID,
-		PublishedAt: dto.PubDate,
+		PublishedAt: time.Time(dto.PubDate),
 		Authors:     make([]string, len(dto.Creator)),
 		Tags:        make([]string, len(dto.Keywords)),
 		Categories:  make([]string, len(dto.Categories)),
@@ -65,31 +84,23 @@ type NewsResponseError struct {
 }
 
 type news struct {
-	NewsConfig
-	client *httpclient.Client
+	appID     string
+	accessKey string
+	client    *httpclient.Client
 }
 
-type NewsConfig struct {
-	AppID     string
-	BaseAPI   string
-	AccessKey string
-}
-
-func NewNews(cfg NewsConfig) *news {
-	client := httpclient.New(
-		httpclient.URL(cfg.BaseAPI),
-	)
-
+func NewNews(appID string, accessKey string, client *httpclient.Client) *news {
 	return &news{
-		NewsConfig: cfg,
-		client:     client,
+		appID:     appID,
+		accessKey: accessKey,
+		client:    client,
 	}
 }
 
 func (n *news) Parse(ctx context.Context, query string, page string) ([]entity.News, string, error) {
 	u, _ := url.Parse("/news")
 	values := u.Query()
-	values.Set("apikey", n.AccessKey)
+	values.Set("apikey", n.accessKey)
 	values.Set("country", COUNTRY)
 	if query != "" {
 		values.Set("q", query)
@@ -124,7 +135,9 @@ func (n *news) parseResult(resp *http.Response) ([]entity.News, string, error) {
 
 	news := make([]entity.News, len(data.Results))
 	for i, result := range data.Results {
-		news[i] = *result.Entity()
+		entity := result.Entity()
+		entity.Source = n.appID
+		news[i] = *entity
 	}
 
 	return news, data.NextPage, nil
