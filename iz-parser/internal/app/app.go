@@ -18,6 +18,7 @@ func Run(cfg *Config) {
 
 	searchParser := service.NewNewsSearch(appID, client)
 	archiveParser := service.NewNewsArchive(appID, client)
+	feedParser := service.NewNewsFeed(appID, client)
 
 	app.Run(
 		&app.Config{
@@ -27,5 +28,6 @@ func Run(cfg *Config) {
 		},
 		searchParser,
 		archiveParser,
+		feedParser,
 	)
 }
