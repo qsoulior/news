@@ -73,6 +73,11 @@ func Run(cfg *Config, searchParser service.Parser, archiveParser service.Parser,
 	rmqProducer := producer.New(rmqConn)
 
 	// search consumer
+	if searchParser == nil {
+		logger.Error().Msg("search parser is nil")
+		return
+	}
+
 	searchService := service.NewNews(service.NewsConfig{
 		Repo:   newsRepo,
 		Parser: searchParser,
@@ -85,31 +90,35 @@ func Run(cfg *Config, searchParser service.Parser, archiveParser service.Parser,
 	runSearcher(sigCtx, &logger, searchService, rmqConn, queue)
 
 	// archive worker
-	archiveService := service.NewNews(service.NewsConfig{
-		Repo:   newsRepo,
-		Parser: archiveParser,
+	if archiveParser != nil {
+		archiveService := service.NewNews(service.NewsConfig{
+			Repo:   newsRepo,
+			Parser: archiveParser,
 
-		Producer:   rmqProducer,
-		Exchange:   "",
-		RoutingKey: "news",
-		AppID:      cfg.ID,
-	})
-	pageService := service.NewPage(service.PageConfig{
-		Repo: pageRepo,
-	})
-	runArchiver(sigCtx, &logger, archiveService, pageService)
+			Producer:   rmqProducer,
+			Exchange:   "",
+			RoutingKey: "news",
+			AppID:      cfg.ID,
+		})
+		pageService := service.NewPage(service.PageConfig{
+			Repo: pageRepo,
+		})
+		runArchiver(sigCtx, &logger, archiveService, pageService)
+	}
 
 	// feed worker
-	feedService := service.NewNews(service.NewsConfig{
-		Repo:   newsRepo,
-		Parser: feedParser,
+	if feedParser != nil {
+		feedService := service.NewNews(service.NewsConfig{
+			Repo:   newsRepo,
+			Parser: feedParser,
 
-		Producer:   rmqProducer,
-		Exchange:   "",
-		RoutingKey: "news",
-		AppID:      cfg.ID,
-	})
-	runFeeder(sigCtx, &logger, feedService)
+			Producer:   rmqProducer,
+			Exchange:   "",
+			RoutingKey: "news",
+			AppID:      cfg.ID,
+		})
+		runFeeder(sigCtx, &logger, feedService)
+	}
 
 	// release worker
 	releaseService := service.NewNews(service.NewsConfig{
