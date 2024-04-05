@@ -30,7 +30,8 @@ func Run(cfg *Config) {
 	client := httpclient.New()
 
 	searchParser := service.NewNewsSearch(appID, client, cfg.API.URL, browser)
-	archiveParser := service.NewNewsArchive(appID, client, cfg.API.URL, browser)
+	// archiveParser := service.NewNewsArchive(appID, client, cfg.API.URL, browser)
+	feedParser := service.NewNewsFeed(appID, client, cfg.API.URL)
 
 	app.Run(
 		&app.Config{
@@ -39,6 +40,7 @@ func Run(cfg *Config) {
 			Redis:    app.ConfigRedis(cfg.Redis),
 		},
 		searchParser,
-		archiveParser,
+		nil,
+		feedParser,
 	)
 }
