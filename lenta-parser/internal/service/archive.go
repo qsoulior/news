@@ -16,7 +16,7 @@ import (
 
 type newsArchive struct {
 	*news
-	URL string
+	url string
 }
 
 func NewNewsArchive(appID string, url string, client *httpclient.Client) *newsArchive {
@@ -27,7 +27,7 @@ func NewNewsArchive(appID string, url string, client *httpclient.Client) *newsAr
 
 	archive := &newsArchive{
 		news: news,
-		URL:  url,
+		url:  url,
 	}
 
 	return archive
@@ -89,7 +89,7 @@ func (n *newsArchive) parseURLs(ctx context.Context, page string) ([]*newsURL, e
 		return nil, fmt.Errorf("useragent.Desktop: %w", err)
 	}
 	// rubrics
-	u, _ := url.Parse(n.URL + "/v3/rubrics")
+	u, _ := url.Parse(n.url + "/v3/rubrics")
 	rubricResp, err := n.client.Get(ctx, u.String(), map[string]string{
 		"User-Agent": ua,
 	})
@@ -106,7 +106,7 @@ func (n *newsArchive) parseURLs(ctx context.Context, page string) ([]*newsURL, e
 	}
 
 	// topics
-	u, _ = url.Parse(n.URL + "/v3/topics/by_rubrics")
+	u, _ = url.Parse(n.url + "/v3/topics/by_rubrics")
 	values := u.Query()
 
 	for _, rubric := range rubricData.Rubrics {

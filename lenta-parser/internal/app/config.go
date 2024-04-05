@@ -17,9 +17,14 @@ type (
 		Search struct {
 			URL string `yaml:"url"`
 		} `yaml:"search"`
+
 		Archive struct {
 			URL string `yaml:"url"`
 		} `yaml:"archive"`
+
+		Feed struct {
+			URL string `yaml:"url"`
+		} `yaml:"feed"`
 	}
 
 	ConfigRabbitMQ struct {

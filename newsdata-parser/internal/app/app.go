@@ -24,5 +24,6 @@ func Run(cfg *Config) {
 		},
 		searchParser,
 		archiveParser,
+		nil,
 	)
 }

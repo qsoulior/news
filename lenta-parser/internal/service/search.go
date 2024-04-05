@@ -15,7 +15,7 @@ import (
 
 type newsSearch struct {
 	*news
-	URL string
+	url string
 }
 
 func NewNewsSearch(appID string, url string, client *httpclient.Client) *newsSearch {
@@ -26,7 +26,7 @@ func NewNewsSearch(appID string, url string, client *httpclient.Client) *newsSea
 
 	search := &newsSearch{
 		news: news,
-		URL:  url,
+		url:  url,
 	}
 
 	return search
@@ -56,7 +56,7 @@ func (n *newsSearch) Parse(ctx context.Context, query string, page string) ([]en
 }
 
 func (n *newsSearch) parseURLs(ctx context.Context, query string, from string) ([]*newsURL, error) {
-	u, _ := url.Parse(n.URL + "/search/v2/process")
+	u, _ := url.Parse(n.url + "/search/v2/process")
 	values := u.Query()
 	values.Set("query", query)
 	values.Set("from", from)
