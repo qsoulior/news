@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DataHenHQ/useragent"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/brianvoe/gofakeit/v7"
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/proto"
 	"github.com/go-rod/stealth"
@@ -28,7 +28,12 @@ func (n *newsView) parseURLs(ctx context.Context, path string) ([]string, error)
 
 	page = page.Context(ctx)
 
-	err = page.SetUserAgent(&proto.NetworkSetUserAgentOverride{UserAgent: gofakeit.UserAgent()})
+	ua, err := useragent.Desktop()
+	if err != nil {
+		return nil, fmt.Errorf("useragent.Desktop: %w", err)
+	}
+
+	err = page.SetUserAgent(&proto.NetworkSetUserAgentOverride{UserAgent: ua})
 	if err != nil {
 		return nil, fmt.Errorf("n.page.SetUserAgent: %w", err)
 	}

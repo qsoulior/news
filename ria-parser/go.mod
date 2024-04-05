@@ -7,8 +7,8 @@ replace github.com/qsoulior/news/aggregator => ../aggregator
 replace github.com/qsoulior/news/parser => ../parser
 
 require (
+	github.com/DataHenHQ/useragent v0.1.0
 	github.com/PuerkitoBio/goquery v1.9.1
-	github.com/brianvoe/gofakeit/v7 v7.0.2
 	github.com/go-rod/rod v0.114.8
 	github.com/go-rod/stealth v0.4.9
 	github.com/ilyakaznacheev/cleanenv v1.5.0
