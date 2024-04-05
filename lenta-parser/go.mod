@@ -3,8 +3,8 @@ module github.com/qsoulior/news/lenta-parser
 go 1.22.0
 
 require (
+	github.com/DataHenHQ/useragent v0.1.0
 	github.com/PuerkitoBio/goquery v1.9.1
-	github.com/brianvoe/gofakeit/v7 v7.0.2
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/qsoulior/news/aggregator v0.0.0-00010101000000-000000000000
 	github.com/qsoulior/news/parser v0.0.0-00010101000000-000000000000

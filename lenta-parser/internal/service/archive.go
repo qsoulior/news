@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/brianvoe/gofakeit/v7"
+	"github.com/DataHenHQ/useragent"
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 	"github.com/qsoulior/news/parser/pkg/httpclient/httpresponse"
@@ -84,10 +84,14 @@ type TopicResponse struct {
 }
 
 func (n *newsArchive) parseURLs(ctx context.Context, page string) ([]*newsURL, error) {
+	ua, err := useragent.Desktop()
+	if err != nil {
+		return nil, fmt.Errorf("useragent.Desktop: %w", err)
+	}
 	// rubrics
 	u, _ := url.Parse(n.URL + "/v3/rubrics")
 	rubricResp, err := n.client.Get(ctx, u.String(), map[string]string{
-		"User-Agent": gofakeit.UserAgent(),
+		"User-Agent": ua,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("n.client.Get: %w", err)
@@ -113,8 +117,13 @@ func (n *newsArchive) parseURLs(ctx context.Context, page string) ([]*newsURL, e
 	values.Set("offset", page+"00")
 	u.RawQuery = values.Encode()
 
+	ua, err = useragent.Desktop()
+	if err != nil {
+		return nil, fmt.Errorf("useragent.Desktop: %w", err)
+	}
+
 	topicResp, err := n.client.Get(ctx, u.String(), map[string]string{
-		"User-Agent": gofakeit.UserAgent(),
+		"User-Agent": ua,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("n.client.Get: %w", err)

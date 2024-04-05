@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/brianvoe/gofakeit/v7"
+	"github.com/DataHenHQ/useragent"
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 	"github.com/qsoulior/news/parser/pkg/httpclient/httpresponse"
@@ -66,8 +66,12 @@ func (n *newsSearch) parseURLs(ctx context.Context, query string, from string) (
 	values.Set("type", "1")
 	u.RawQuery = values.Encode()
 
+	ua, err := useragent.Desktop()
+	if err != nil {
+		return nil, fmt.Errorf("useragent.Desktop: %w", err)
+	}
 	resp, err := n.client.Get(ctx, u.String(), map[string]string{
-		"User-Agent": gofakeit.UserAgent(),
+		"User-Agent": ua,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("n.client.Get: %w", err)
