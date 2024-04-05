@@ -15,13 +15,14 @@ import (
 	"github.com/qsoulior/news/parser/internal/repo"
 	"github.com/qsoulior/news/parser/internal/service"
 	"github.com/qsoulior/news/parser/internal/transport/amqp"
+	"github.com/qsoulior/news/parser/internal/worker"
 	"github.com/qsoulior/news/parser/pkg/redis"
 	"github.com/rs/zerolog"
 )
 
 var wg sync.WaitGroup
 
-func Run(cfg *Config, searchParser service.Parser, archiveParser service.Parser) {
+func Run(cfg *Config, searchParser service.Parser, archiveParser service.Parser, feedParser service.Parser) {
 	zerolog.DurationFieldUnit = time.Second
 	out := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
 		w.TimeFormat = time.RFC3339
@@ -70,21 +71,8 @@ func Run(cfg *Config, searchParser service.Parser, archiveParser service.Parser)
 
 	// rabbit producer
 	rmqProducer := producer.New(rmqConn)
-	archiveService := service.NewNews(service.NewsConfig{
-		Repo:   newsRepo,
-		Parser: archiveParser,
 
-		Producer:   rmqProducer,
-		Exchange:   "",
-		RoutingKey: "news",
-		AppID:      cfg.ID,
-	})
-
-	pageService := service.NewPage(service.PageConfig{
-		Repo: pageRepo,
-	})
-
-	// rabbit consumer
+	// search consumer
 	searchService := service.NewNews(service.NewsConfig{
 		Repo:   newsRepo,
 		Parser: searchParser,
@@ -94,20 +82,46 @@ func Run(cfg *Config, searchParser service.Parser, archiveParser service.Parser)
 		RoutingKey: "news",
 		AppID:      cfg.ID,
 	})
+	runSearcher(sigCtx, &logger, searchService, rmqConn, queue)
 
-	consumerLog := logger.With().Str("module", "consumer").Logger()
-	runConsumer(sigCtx, &consumerLog, searchService, rmqConn, queue)
-	consumerLog.Info().Msg("started")
+	// archive worker
+	archiveService := service.NewNews(service.NewsConfig{
+		Repo:   newsRepo,
+		Parser: archiveParser,
 
-	// worker
-	workerLog := logger.With().Str("module", "worker").Logger()
-	runWorker(sigCtx, &workerLog, archiveService, pageService)
-	workerLog.Info().Msg("started")
+		Producer:   rmqProducer,
+		Exchange:   "",
+		RoutingKey: "news",
+		AppID:      cfg.ID,
+	})
+	pageService := service.NewPage(service.PageConfig{
+		Repo: pageRepo,
+	})
+	runArchiver(sigCtx, &logger, archiveService, pageService)
 
-	// releaser
-	releaserLog := logger.With().Str("module", "releaser").Logger()
-	runReleaser(sigCtx, &releaserLog, archiveService)
-	releaserLog.Info().Msg("started")
+	// feed worker
+	feedService := service.NewNews(service.NewsConfig{
+		Repo:   newsRepo,
+		Parser: feedParser,
+
+		Producer:   rmqProducer,
+		Exchange:   "",
+		RoutingKey: "news",
+		AppID:      cfg.ID,
+	})
+	runFeeder(sigCtx, &logger, feedService)
+
+	// release worker
+	releaseService := service.NewNews(service.NewsConfig{
+		Repo:   newsRepo,
+		Parser: nil,
+
+		Producer:   rmqProducer,
+		Exchange:   "",
+		RoutingKey: "news",
+		AppID:      cfg.ID,
+	})
+	runReleaser(sigCtx, &logger, releaseService)
 
 	wg.Wait()
 }
@@ -151,8 +165,10 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, url string, queueName s
 	return rmqConn, queue.Name, nil
 }
 
-func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News, conn *rabbitmq.Connection, queue string) {
-	amqpRouter := amqp.NewRouter(logger, news)
+func runSearcher(ctx context.Context, logger *zerolog.Logger, news service.News, conn *rabbitmq.Connection, queue string) {
+	log := logger.With().Str("module", "searcher").Logger()
+
+	amqpRouter := amqp.NewRouter(&log, news)
 	rmqConsumer := consumer.New(conn, amqpRouter)
 
 	go func() {
@@ -166,23 +182,18 @@ func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News,
 			case <-timer.C:
 				err := rmqConsumer.Consume(ctx, queue)
 				if err != nil {
-					logger.Error().Err(err).Msg("")
+					log.Error().Err(err).Msg("")
 					return
 				}
-				logger.Info().Msg("graceful shutdown")
+				log.Info().Msg("graceful shutdown")
 			}
 		}
 	}()
+
+	log.Info().Msg("started")
 }
 
-func runWorker(ctx context.Context, logger *zerolog.Logger, news service.News, page service.Page) {
-	worker := newWorker(workerConfig{
-		Delay:  5 * time.Second,
-		Logger: logger,
-		News:   news,
-		Page:   page,
-	})
-
+func runWorker(ctx context.Context, logger *zerolog.Logger, worker worker.Worker) {
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
@@ -193,19 +204,27 @@ func runWorker(ctx context.Context, logger *zerolog.Logger, news service.News, p
 		}
 		logger.Info().Msg("graceful shutdown")
 	}()
+
+	logger.Info().Msg("started")
+}
+
+func runArchiver(ctx context.Context, logger *zerolog.Logger, news service.News, page service.Page) {
+	log := logger.With().Str("module", "archiver").Logger()
+	worker := worker.NewArchive(5*time.Second, &log, news, page)
+
+	runWorker(ctx, &log, worker)
 }
 
 func runReleaser(ctx context.Context, logger *zerolog.Logger, news service.News) {
-	releaser := newReleaser(releaserConfig{
-		Delay:  10 * time.Minute,
-		Logger: logger,
-		News:   news,
-	})
+	log := logger.With().Str("module", "releaser").Logger()
+	worker := worker.NewRelease(10*time.Minute, &log, news)
 
-	go func() {
-		wg.Add(1)
-		defer wg.Done()
-		releaser.Run(ctx)
-		logger.Info().Msg("graceful shutdown")
-	}()
+	runWorker(ctx, &log, worker)
+}
+
+func runFeeder(ctx context.Context, logger *zerolog.Logger, news service.News) {
+	log := logger.With().Str("module", "feeder").Logger()
+	worker := worker.NewFeed(15*time.Second, &log, news)
+
+	runWorker(ctx, &log, worker)
 }
