@@ -3,7 +3,6 @@ import { ref } from "vue"
 import { NFlex, NButton, NSelect, NText, NDatePicker, type SelectOption } from "naive-ui"
 import { IconPlus } from "@/components/icons"
 
-
 const sourceValue = ref<string | null>(null)
 const sourceOptions: SelectOption[] = [
   {
@@ -49,6 +48,7 @@ const dateShortcuts = {
           format="dd.MM.yyyy"
           :actions="null"
           :shortcuts="dateShortcuts"
+          style="max-width: 10em"
         />
         <n-text>по</n-text>
         <n-date-picker
@@ -58,10 +58,11 @@ const dateShortcuts = {
           format="dd.MM.yyyy"
           :actions="null"
           :shortcuts="dateShortcuts"
+          style="max-width: 10em"
         />
       </n-flex>
     </n-flex>
-    <n-flex justify="space-between">
+    <n-flex justify="space-between" :wrap="false">
       <n-select
         filterable
         multiple
@@ -78,7 +79,7 @@ const dateShortcuts = {
       </n-select>
       <n-flex :wrap="false">
         <n-button>Сбросить</n-button>
-        <n-button>Применить фильтры</n-button>
+        <n-button>Применить</n-button>
       </n-flex>
     </n-flex>
   </n-flex>

@@ -5,12 +5,14 @@ import { IconFilter, IconFilterDismiss } from "@/components/icons"
 import ListFilter from "@/components/ListFilter.vue"
 import ListSearch from "@/components/ListSearch.vue"
 import ListSort from "@/components/ListSort.vue"
+import ListContent from "@/components/ListContent.vue"
 
 const isFilterShown = ref(false)
+const count = ref(1234)
 </script>
 
 <template>
-  <n-flex vertical size="large">
+  <n-flex vertical size="large" style="max-width: 50em; margin: auto">
     <ListSearch />
     <n-collapse-transition :show="isFilterShown">
       <ListFilter />
@@ -18,7 +20,7 @@ const isFilterShown = ref(false)
     <n-flex align="center" justify="space-between">
       <ListSort />
       <n-flex align="center">
-        <n-text>Результатов: 1234</n-text>
+        <n-text>Результатов: {{ count }}</n-text>
         <n-button tertiary @click="isFilterShown = !isFilterShown">
           <template #icon>
             <IconFilterDismiss v-if="isFilterShown" />
@@ -28,5 +30,6 @@ const isFilterShown = ref(false)
       </n-flex>
     </n-flex>
     <n-divider style="margin: 0" />
+    <ListContent />
   </n-flex>
 </template>

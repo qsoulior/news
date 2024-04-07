@@ -1,4 +1,7 @@
 // import "./assets/main.css"
+// import "vfonts/FiraSans.css"
+// import "vfonts/IBMPlexSans.css"
+import "vfonts/Roboto.css"
 
 import { createApp } from "vue"
 import App from "@/App.vue"
