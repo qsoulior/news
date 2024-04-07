@@ -44,7 +44,7 @@ onMounted(() => {
   <n-layout>
     <n-layout style="min-height: 100vh">
       <LayoutHeader v-model:theme="themeType" />
-      <n-layout-content>
+      <n-layout-content content-style="padding: 2rem">
         <RouterView />
       </n-layout-content>
     </n-layout>
