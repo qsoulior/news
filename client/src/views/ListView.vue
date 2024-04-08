@@ -1,14 +1,48 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, onMounted, ref } from "vue"
+import { useRouter } from "vue-router"
 import { NFlex, NCollapseTransition, NButton, NText, NDivider } from "naive-ui"
+import type { NewsHead } from "@/entities/news"
 import { IconFilter, IconFilterDismiss } from "@/components/icons"
+import ListSort from "@/components/ListSort.vue"
 import ListFilter from "@/components/ListFilter.vue"
 import ListSearch from "@/components/ListSearch.vue"
-import ListSort from "@/components/ListSort.vue"
 import ListContent from "@/components/ListContent.vue"
 
+interface Props {
+  page?: number
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  page: 1
+})
+
+const router = useRouter()
+function onUpdatePage(page: number) {
+  router.push({ name: "list", params: { page: page == 1 ? "" : page.toString() } })
+}
+
 const isFilterShown = ref(false)
-const count = ref(1234)
+const count = ref(10)
+
+const news = ref<NewsHead[]>([])
+const loading = ref(false)
+
+onMounted(() => {
+  loading.value = true
+  setTimeout(() => {
+    for (let i = 0; i < count.value; i++) {
+      news.value.push({
+        id: i.toString(),
+        title: "Заголовок",
+        description: "Описание",
+        source: "РИА Новости",
+        publishedAt: new Date()
+      })
+    }
+    loading.value = false
+  }, 2000)
+})
 </script>
 
 <template>
@@ -30,6 +64,6 @@ const count = ref(1234)
       </n-flex>
     </n-flex>
     <n-divider style="margin: 0" />
-    <ListContent />
+    <ListContent :news="news" :loading="loading" :page="page" @update:page="onUpdatePage" />
   </n-flex>
 </template>

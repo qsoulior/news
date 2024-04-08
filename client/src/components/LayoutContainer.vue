@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue"
 import { RouterView } from "vue-router"
-import { type GlobalTheme, NLayout, NLayoutContent, darkTheme, useOsTheme } from "naive-ui"
+import { type GlobalTheme, NLayout, NLayoutContent, darkTheme, useOsTheme, NBackTop } from "naive-ui"
 import LayoutHeader from "@/components/LayoutHeader.vue"
 import LayoutFooter from "@/components/LayoutFooter.vue"
 
@@ -41,7 +41,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <n-layout>
+  <n-layout content-style="max-height: 100vh;">
+    <n-back-top />
     <n-layout style="min-height: 100vh">
       <LayoutHeader v-model:theme="themeType" />
       <n-layout-content content-style="padding: 2rem;" embedded>

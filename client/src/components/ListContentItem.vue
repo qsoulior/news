@@ -10,7 +10,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <n-card size="small">
+  <n-card class="item-card" size="small">
     <n-flex vertical size="small">
       <n-text strong>{{ title }}</n-text>
       <n-text>{{ description }}</n-text>
@@ -21,3 +21,9 @@ const props = defineProps<{
     </n-flex>
   </n-card>
 </template>
+
+<style scoped>
+.item-card:hover {
+  cursor: pointer;
+}
+</style>

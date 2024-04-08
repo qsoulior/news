@@ -1,26 +1,35 @@
 <script setup lang="ts">
-import { ref } from "vue"
 import { NFlex, NEmpty, NPagination } from "naive-ui"
 import ListContentItem from "@/components/ListContentItem.vue"
+import ListContentSkeleton from "@/components/ListContentSkeleton.vue"
+import { type NewsHead } from "@/entities/news"
 
-const count = ref(10)
+defineProps<{
+  news: NewsHead[]
+  loading: boolean
+}>()
+
+const page = defineModel<number>("page")
 </script>
 
 <template>
   <n-flex vertical>
-    <n-empty v-if="count == 0" description="Новости не найдены" />
+    <n-empty v-if="!loading && news.length == 0" description="Новости не найдены" />
     <n-flex v-else vertical size="large" align="center">
-      <n-flex vertical style="width: 100%">
+      <n-flex v-if="loading" vertical style="width: 100%">
+        <ListContentSkeleton v-for="i in 10" :key="i" />
+      </n-flex>
+      <n-flex v-else vertical style="width: 100%">
         <ListContentItem
-          v-for="i in count"
-          :key="i"
-          title="Заголовок"
-          description="Описание"
-          :published-at="new Date()"
-          source="РИА Новости"
+          v-for="item in news"
+          :key="item.id"
+          :title="item.title"
+          :description="item.description"
+          :source="item.source"
+          :published-at="item.publishedAt"
         />
       </n-flex>
-      <n-pagination :page-count="100" />
+      <n-pagination v-model:page="page" :page-count="100" />
     </n-flex>
   </n-flex>
 </template>
