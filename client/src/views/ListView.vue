@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue"
+import { ref, watch } from "vue"
 import { useRouter } from "vue-router"
 import { NFlex, NCollapseTransition, NButton, NText, NDivider } from "naive-ui"
 import type { NewsHead } from "@/entities/news"
@@ -8,6 +8,7 @@ import ListSort from "@/components/ListSort.vue"
 import ListFilter from "@/components/ListFilter.vue"
 import ListSearch from "@/components/ListSearch.vue"
 import ListContent from "@/components/ListContent.vue"
+import { getNewsHead } from "@/services/news"
 
 interface Props {
   page?: number
@@ -24,25 +25,26 @@ function onUpdatePage(page: number) {
 
 const isFilterShown = ref(false)
 const count = ref(10)
+const countTotal = ref(1000)
 
 const news = ref<NewsHead[]>([])
 const loading = ref(false)
 
-onMounted(() => {
+let timer = 0
+function loadNews(page: number) {
+  clearTimeout(timer)
   loading.value = true
-  setTimeout(() => {
-    for (let i = 0; i < count.value; i++) {
-      news.value.push({
-        id: i.toString(),
-        title: "Заголовок",
-        description: "Описание",
-        source: "РИА Новости",
-        publishedAt: new Date()
-      })
-    }
+  timer = setTimeout(async () => {
+    news.value = await getNewsHead(count.value, 0)
     loading.value = false
-  }, 2000)
-})
+  }, 1000)
+}
+
+watch(
+  () => props.page,
+  (page) => loadNews(page),
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -54,7 +56,7 @@ onMounted(() => {
     <n-flex align="center" justify="space-between">
       <ListSort />
       <n-flex align="center">
-        <n-text>Результатов: {{ count }}</n-text>
+        <n-text v-if="!loading">Результатов: {{ countTotal }}</n-text>
         <n-button tertiary @click="isFilterShown = !isFilterShown">
           <template #icon>
             <IconFilterDismiss v-if="isFilterShown" />
@@ -64,6 +66,12 @@ onMounted(() => {
       </n-flex>
     </n-flex>
     <n-divider style="margin: 0" />
-    <ListContent :news="news" :loading="loading" :page="page" @update:page="onUpdatePage" />
+    <ListContent
+      :news="news"
+      :loading="loading"
+      :page="page"
+      :page-count="countTotal / count"
+      @update:page="onUpdatePage"
+    />
   </n-flex>
 </template>

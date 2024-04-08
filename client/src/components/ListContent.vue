@@ -7,6 +7,7 @@ import { type NewsHead } from "@/entities/news"
 defineProps<{
   news: NewsHead[]
   loading: boolean
+  pageCount: number
 }>()
 
 const page = defineModel<number>("page")
@@ -29,7 +30,7 @@ const page = defineModel<number>("page")
           :published-at="item.publishedAt"
         />
       </n-flex>
-      <n-pagination v-model:page="page" :page-count="100" />
+      <n-pagination v-model:page="page" :page-count="pageCount" />
     </n-flex>
   </n-flex>
 </template>
