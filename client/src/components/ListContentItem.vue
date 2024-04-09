@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { NCard, NFlex, NText } from "naive-ui"
 
-const props = defineProps<{
+defineProps<{
+  id: string
   title: string
   description: string
   publishedAt: Date
@@ -10,20 +11,16 @@ const props = defineProps<{
 </script>
 
 <template>
-  <n-card class="item-card" size="small">
-    <n-flex vertical size="small">
-      <n-text strong>{{ title }}</n-text>
-      <n-text>{{ description }}</n-text>
-      <n-flex justify="space-between">
-        <n-text depth="3">{{ publishedAt.toLocaleString() }}</n-text>
-        <n-text depth="3">{{ source }}</n-text>
+  <router-link :to="{ name: 'item', params: { id: id } }" style="text-decoration: none">
+    <n-card size="small">
+      <n-flex vertical size="small">
+        <n-text strong>{{ title }}</n-text>
+        <n-text>{{ description }}</n-text>
+        <n-flex justify="space-between">
+          <n-text depth="3">{{ publishedAt.toLocaleString() }}</n-text>
+          <n-text depth="3">{{ source }}</n-text>
+        </n-flex>
       </n-flex>
-    </n-flex>
-  </n-card>
+    </n-card>
+  </router-link>
 </template>
-
-<style scoped>
-.item-card:hover {
-  cursor: pointer;
-}
-</style>

@@ -17,7 +17,9 @@ function setThemeDark() {
 <template>
   <n-layout-header bordered>
     <n-flex align="center" justify="space-between">
-      <n-text>Новости</n-text>
+      <router-link class="n-layout-header--home" :to="{ name: 'list' }" style="text-decoration: none">
+        <n-text>Новости</n-text>
+      </router-link>
       <n-flex size="small">
         <n-button v-if="isThemeDark" class="n-button--square" quaternary circle @click="setThemeLight">
           <template #icon>

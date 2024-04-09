@@ -24,6 +24,7 @@ const page = defineModel<number>("page")
         <ListContentItem
           v-for="item in news"
           :key="item.id"
+          :id="item.id"
           :title="item.title"
           :description="item.description"
           :source="item.source"

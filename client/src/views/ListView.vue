@@ -37,7 +37,7 @@ function loadNews(page: number) {
   timer = setTimeout(async () => {
     news.value = await getNewsHead(count.value, 0)
     loading.value = false
-  }, 1000)
+  }, 100)
 }
 
 watch(
