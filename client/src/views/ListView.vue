@@ -57,7 +57,7 @@ watch(
       <ListSort />
       <n-flex align="center">
         <n-text v-if="!loading">Результатов: {{ countTotal }}</n-text>
-        <n-button tertiary @click="isFilterShown = !isFilterShown">
+        <n-button tertiary title="Показать фильтры" @click="isFilterShown = !isFilterShown">
           <template #icon>
             <IconFilterDismiss v-if="isFilterShown" />
             <IconFilter v-else />

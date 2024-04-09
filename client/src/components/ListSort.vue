@@ -26,7 +26,7 @@ const ascending = defineModel<boolean>("ascending", {
 <template>
   <n-flex :wrap="false">
     <n-select v-model:value="type" :options="options" placeholder="Сортировка" style="width: 12em" />
-    <n-button tertiary @click="ascending = !ascending">
+    <n-button tertiary title="Изменить направление сортировки" @click="ascending = !ascending">
       <template #icon>
         <n-icon :style="ascending ? 'transform: rotate(180deg)' : ''">
           <IconArrow />
