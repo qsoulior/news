@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { NCard, NFlex, NText } from "naive-ui"
+import { computed } from "vue"
+import { NCard, NFlex, NText, NImage } from "naive-ui"
+import { getSourceImg, getSourceName } from "@/services/news"
 
-defineProps<{
+const props = defineProps<{
   id: string
   title: string
   description: string
   publishedAt: Date
   source: string
 }>()
+
+const sourceImg = computed(() => getSourceImg(props.source))
+const sourceName = computed(() => getSourceName(props.source))
 </script>
 
 <template>
@@ -18,7 +23,10 @@ defineProps<{
         <n-text>{{ description }}</n-text>
         <n-flex justify="space-between">
           <n-text depth="3">{{ publishedAt.toLocaleString() }}</n-text>
-          <n-text depth="3">{{ source }}</n-text>
+          <n-flex size="small" align="center">
+            <n-image :src="sourceImg" width="18" preview-disabled />
+            <n-text depth="3">{{ sourceName }}</n-text>
+          </n-flex>
         </n-flex>
       </n-flex>
     </n-card>
