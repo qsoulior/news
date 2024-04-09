@@ -12,6 +12,12 @@ const router = createRouter({
         return { page: isNaN(param) ? undefined : param }
       },
       component: () => import("@/views/ListView.vue")
+    },
+    {
+      path: "/news/:id",
+      name: "item",
+      props: true,
+      component: () => import("@/views/ItemView.vue")
     }
   ]
 })

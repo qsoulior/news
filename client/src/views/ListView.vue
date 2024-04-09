@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue"
 import { useRouter } from "vue-router"
-import { NFlex, NCollapseTransition, NButton, NText, NDivider } from "naive-ui"
+import { NFlex, NCollapseTransition, NButton, NIcon, NText, NDivider } from "naive-ui"
 import type { NewsHead } from "@/entities/news"
 import { IconFilter, IconFilterDismiss } from "@/components/icons"
 import ListSort from "@/components/ListSort.vue"
@@ -59,8 +59,10 @@ watch(
         <n-text v-if="!loading">Результатов: {{ countTotal }}</n-text>
         <n-button tertiary title="Показать фильтры" @click="isFilterShown = !isFilterShown">
           <template #icon>
-            <IconFilterDismiss v-if="isFilterShown" />
-            <IconFilter v-else />
+            <n-icon>
+              <IconFilterDismiss v-if="isFilterShown" />
+              <IconFilter v-else />
+            </n-icon>
           </template>
         </n-button>
       </n-flex>

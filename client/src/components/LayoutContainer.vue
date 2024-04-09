@@ -41,7 +41,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <n-layout content-style="max-height: 100vh;">
+  <n-layout style="height: 100vh">
     <n-back-top />
     <n-layout style="min-height: 100vh">
       <LayoutHeader v-model:theme="themeType" />
