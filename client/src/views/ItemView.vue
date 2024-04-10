@@ -30,6 +30,7 @@ onMounted(() => {
     v-else-if="news"
     :title="news.title"
     :description="news.description"
+    :link="news.link"
     :source="news.source"
     :publishedAt="news.publishedAt"
     :authors="news.authors"

@@ -6,6 +6,7 @@ import IconHome from "@/components/icons/IconHome.vue"
 import IconLink from "@/components/icons/IconLink.vue"
 import IconGithub from "@/components/icons/IconGithub.vue"
 import IconMoon from "@/components/icons/IconMoon.vue"
+import IconOpen from "@/components/icons/IconOpen.vue"
 import IconPerson from "@/components/icons/IconPerson.vue"
 import IconPlus from "@/components/icons/IconPlus.vue"
 import IconQR from "@/components/icons/IconQR.vue"
@@ -21,6 +22,7 @@ export {
   IconLink,
   IconGithub,
   IconMoon,
+  IconOpen,
   IconPerson,
   IconPlus,
   IconQR,

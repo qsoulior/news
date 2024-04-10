@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { type GlobalTheme, NConfigProvider, NGlobalStyle } from "naive-ui"
+import { type GlobalTheme, NConfigProvider, NGlobalStyle, NMessageProvider } from "naive-ui"
 import LayoutContainer from "@/components/LayoutContainer.vue"
 
 const theme = ref<GlobalTheme | null>()
@@ -9,6 +9,8 @@ const theme = ref<GlobalTheme | null>()
 <template>
   <n-config-provider :theme="theme">
     <n-global-style />
-    <LayoutContainer v-model:theme="theme" />
+    <n-message-provider>
+      <LayoutContainer v-model:theme="theme" />
+    </n-message-provider>
   </n-config-provider>
 </template>

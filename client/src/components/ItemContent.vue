@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { NFlex, NButton, NText, NH2, NTag, NDivider, NIcon, NImage } from "naive-ui"
-import { IconCalendar, IconPerson, IconQR, IconLink } from "@/components/icons"
+import { NFlex, NText, NH2, NTag, NDivider, NIcon, NImage } from "naive-ui"
+import { IconCalendar, IconPerson } from "@/components/icons"
+import ItemContentControl from "@/components/ItemContentControl.vue"
 import { getSourceImg, getSourceName } from "@/services/news"
 
 const props = defineProps<{
   title: string
   description: string
+  link: string
   source: string
   publishedAt?: Date
   authors: string[]
@@ -36,30 +38,18 @@ const authorsStr = computed(() => props.authors.join(", "))
       </n-flex>
     </n-flex>
     <n-flex :wrap="false" justify="space-between">
-      <n-flex vertical>
-        <n-h2 style="margin: 0">{{ title }}</n-h2>
-        <n-text depth="3">{{ description }}</n-text>
+      <n-flex vertical size="large">
+        <n-flex vertical>
+          <n-h2 style="margin: 0">{{ title }}</n-h2>
+          <n-text depth="3">{{ description }}</n-text>
+        </n-flex>
+        <n-flex>
+          <n-tag v-for="(tag, i) in tags" :key="i">{{ tag }}</n-tag>
+        </n-flex>
       </n-flex>
-      <n-flex vertical>
-        <n-button tertiary title="Скопировать ссылку">
-          <template #icon>
-            <n-icon>
-              <IconLink />
-            </n-icon>
-          </template>
-        </n-button>
-        <n-button tertiary title="Показать QR-код">
-          <template #icon>
-            <n-icon>
-              <IconQR />
-            </n-icon>
-          </template>
-        </n-button>
-      </n-flex>
+      <ItemContentControl :link="link" />
     </n-flex>
-    <n-flex>
-      <n-tag v-for="(tag, i) in tags" :key="i">{{ tag }}</n-tag>
-    </n-flex>
+
     <n-divider style="margin: 1em 0" />
     <n-flex vertical :size="20">
       <n-text v-for="(text, i) in contents" :key="i">{{ text }}</n-text>
