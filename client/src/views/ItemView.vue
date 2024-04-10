@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue"
 import ItemContent from "@/components/ItemContent.vue"
 import ItemEmpty from "@/components/ItemEmpty.vue"
+import ItemSkeleton from "@/components/ItemSkeleton.vue"
 import type { News } from "@/entities/news"
 import { getNews } from "@/services/news"
 
@@ -24,8 +25,9 @@ onMounted(() => {
 </script>
 
 <template>
+  <ItemSkeleton v-if="loading" />
   <ItemContent
-    v-if="news"
+    v-else-if="news"
     :title="news.title"
     :description="news.description"
     :source="news.source"
