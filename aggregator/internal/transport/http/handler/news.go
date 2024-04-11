@@ -41,21 +41,21 @@ func (n *news) Get(w http.ResponseWriter, r *http.Request) {
 	if limit != "" {
 		Limit, err := strconv.Atoi(limit)
 		if err == nil {
-			opts.Skip = Limit
+			opts.Limit = Limit
 		}
 	}
 
 	news, err := n.Service.GetByQuery(r.Context(), query, opts)
 	if err != nil {
 		ErrorJSON(w, "unexpected error while receiving data", http.StatusInternalServerError)
-		n.Logger.Error().Err(err).Msg("")
+		n.Logger.Error().Err(err).Send()
 		return
 	}
 
 	if len(news) < 5 && query.Title != "" {
 		err := n.Service.Parse(r.Context(), query.Title)
 		if err != nil {
-			n.Logger.Error().Err(err).Msg("")
+			n.Logger.Error().Err(err).Send()
 		}
 	}
 

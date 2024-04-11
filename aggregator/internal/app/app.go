@@ -43,7 +43,7 @@ func Run(cfg *Config) {
 		Logger:       &mongoLog,
 	})
 	if err != nil {
-		mongoLog.Error().Err(err).Msg("")
+		mongoLog.Error().Err(err).Send()
 		return
 	}
 	mongoLog.Info().Str("uri", cfg.MongoDB.URI).Msg("started")
@@ -68,7 +68,7 @@ func Run(cfg *Config) {
 	rmqLog := logger.With().Str("module", "rmq").Logger()
 	rmqConn, err := runRMQ(sigCtx, &rmqLog, cfg.RabbitMQ)
 	if err != nil {
-		rmqLog.Error().Err(err).Msg("")
+		rmqLog.Error().Err(err).Send()
 		return
 	}
 	rmqLog.Info().Msg("started")
@@ -149,7 +149,7 @@ func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News,
 			case <-timer.C:
 				err := rmqConsumer.Consume(ctx, "news")
 				if err != nil {
-					logger.Error().Err(err).Msg("")
+					logger.Error().Err(err).Send()
 					return
 				}
 				logger.Info().Msg("graceful shutdown")
@@ -171,7 +171,7 @@ func runServer(ctx context.Context, logger *zerolog.Logger, news service.News, c
 		case <-ctx.Done():
 			logger.Info().Msg("term signal accepted")
 		case err := <-httpServer.Err():
-			logger.Error().Err(err).Msg("")
+			logger.Error().Err(err).Send()
 		}
 
 		// http server graceful shutdown

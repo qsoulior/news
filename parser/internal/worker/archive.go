@@ -49,7 +49,7 @@ func (a *archive) work(ctx context.Context, page string) {
 			if err == nil {
 				err = a.page.Set(ctx, nextPage)
 				if err != nil {
-					a.logger.Error().Str("next_page", nextPage).Err(err).Msg("")
+					a.logger.Error().Str("next_page", nextPage).Err(err).Send()
 				}
 
 				delay = a.delay
@@ -61,7 +61,7 @@ func (a *archive) work(ctx context.Context, page string) {
 				} else {
 					delay = a.delay
 				}
-				a.logger.Error().Str("page", page).Err(err).Dur("delay", delay).Msg("")
+				a.logger.Error().Str("page", page).Err(err).Dur("delay", delay).Send()
 			}
 
 			timer.Reset(delay)

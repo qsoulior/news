@@ -27,12 +27,12 @@ func (n *news) Handle(ctx context.Context, msg *rabbitmq.Delivery) {
 	var news entity.News
 	err := json.Unmarshal(msg.Body, &news)
 	if err != nil {
-		n.Logger.Error().Err(err).Msg("")
+		n.Logger.Error().Err(err).Send()
 		return
 	}
 
 	err = n.Service.Create(ctx, news)
 	if err != nil {
-		n.Logger.Error().Err(err).Msg("")
+		n.Logger.Error().Err(err).Send()
 	}
 }

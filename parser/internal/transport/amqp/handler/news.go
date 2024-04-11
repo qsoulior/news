@@ -24,6 +24,6 @@ func NewNews(cfg NewsConfig) *news {
 func (n *news) Handle(ctx context.Context, msg *rabbitmq.Delivery) {
 	_, err := n.Service.Parse(ctx, string(msg.Body), "")
 	if err != nil {
-		n.Logger.Error().Err(err).Msg("")
+		n.Logger.Error().Err(err).Send()
 	}
 }

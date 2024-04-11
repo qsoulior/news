@@ -95,8 +95,14 @@ func (n *newsMongo) GetByID(ctx context.Context, id string) (*entity.News, error
 
 func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) ([]entity.News, error) {
 	filter := bson.M{
-		"title":  fmt.Sprintf("/%s/i", query.Title),
-		"source": fmt.Sprintf("/%s/i", query.Source),
+		"title": primitive.Regex{
+			Pattern: query.Title,
+			Options: "i",
+		},
+		"source": primitive.Regex{
+			Pattern: query.Source,
+			Options: "i",
+		},
 	}
 
 	findOpts := options.Find()

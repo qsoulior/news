@@ -42,7 +42,7 @@ func Run(cfg *Config, searchParser service.Parser, archiveParser service.Parser,
 		Logger:       &redisLog,
 	})
 	if err != nil {
-		redisLog.Error().Err(err).Msg("")
+		redisLog.Error().Err(err).Send()
 		return
 	}
 	redisLog.Info().Str("url", cfg.Redis.URL).Msg("started")
@@ -64,7 +64,7 @@ func Run(cfg *Config, searchParser service.Parser, archiveParser service.Parser,
 	rmqLog := logger.With().Str("module", "rmq").Logger()
 	rmqConn, queue, err := runRMQ(sigCtx, &rmqLog, cfg.RabbitMQ.URL, "query."+cfg.ID)
 	if err != nil {
-		rmqLog.Error().Err(err).Msg("")
+		rmqLog.Error().Err(err).Send()
 		return
 	}
 	rmqLog.Info().Msg("started")
@@ -191,7 +191,7 @@ func runSearcher(ctx context.Context, logger *zerolog.Logger, news service.News,
 			case <-timer.C:
 				err := rmqConsumer.Consume(ctx, queue)
 				if err != nil {
-					log.Error().Err(err).Msg("")
+					log.Error().Err(err).Send()
 					return
 				}
 				log.Info().Msg("graceful shutdown")
@@ -208,7 +208,7 @@ func runWorker(ctx context.Context, logger *zerolog.Logger, worker worker.Worker
 		defer wg.Done()
 		err := worker.Run(ctx)
 		if err != nil {
-			logger.Error().Err(err).Msg("")
+			logger.Error().Err(err).Send()
 			return
 		}
 		logger.Info().Msg("graceful shutdown")

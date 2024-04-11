@@ -14,8 +14,8 @@ func NewRouter(logger *zerolog.Logger, service service.News) http.Handler {
 	mux := chi.NewMux()
 	mux.Use(middleware.AllowContentType("application/json"))
 	mux.Use(middleware.RealIP)
-	mux.Use(middleware.Logger)
-	mux.Use(middleware.Recoverer)
+	mux.Use(LoggerMiddleware(logger))
+	mux.Use(RecovererMiddleware(logger))
 
 	news := handler.NewNews(handler.NewsConfig{
 		Logger:  logger,

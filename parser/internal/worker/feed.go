@@ -40,7 +40,7 @@ func (f *feed) Run(ctx context.Context) error {
 				} else {
 					delay = f.delay
 				}
-				f.logger.Error().Err(err).Dur("delay", delay).Msg("")
+				f.logger.Error().Err(err).Dur("delay", delay).Send()
 			}
 
 			timer.Reset(delay)

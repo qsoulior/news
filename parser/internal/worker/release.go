@@ -31,7 +31,7 @@ func (r *release) Run(ctx context.Context) error {
 		case <-timer.C:
 			count, err := r.news.Release(ctx)
 			if err != nil {
-				r.logger.Error().Err(err).Int("count", count).Msg("")
+				r.logger.Error().Err(err).Int("count", count).Send()
 			}
 			r.logger.Info().Dur("delay", r.delay).Int("count", count).Msg("released")
 			timer.Reset(r.delay)
