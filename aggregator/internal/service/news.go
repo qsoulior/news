@@ -56,13 +56,13 @@ type (
 	Options = repo.Options
 )
 
-func (n *news) GetByQuery(ctx context.Context, query Query, opts Options) ([]entity.News, error) {
-	news, err := n.Repo.GetByQuery(ctx, query, opts)
+func (n *news) GetByQuery(ctx context.Context, query Query, opts Options) ([]entity.News, int, error) {
+	news, count, err := n.Repo.GetByQuery(ctx, query, opts)
 	if err != nil {
-		return nil, fmt.Errorf("n.repo.GetByQuery: %w", err)
+		return nil, 0, fmt.Errorf("n.repo.GetByQuery: %w", err)
 	}
 
-	return news, nil
+	return news, count, nil
 }
 
 func (n *news) Parse(ctx context.Context, query string) error {

@@ -24,7 +24,7 @@ func NewNews(cfg NewsConfig) *news {
 func (n *news) Get(w http.ResponseWriter, r *http.Request) {
 	values := r.URL.Query()
 	query := service.Query{
-		Title:  values.Get("title"),
+		Text:   values.Get("text"),
 		Source: values.Get("source"),
 	}
 
@@ -45,19 +45,23 @@ func (n *news) Get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	news, err := n.Service.GetByQuery(r.Context(), query, opts)
+	news, count, err := n.Service.GetByQuery(r.Context(), query, opts)
 	if err != nil {
 		ErrorJSON(w, "unexpected error while receiving data", http.StatusInternalServerError)
 		n.Logger.Error().Err(err).Send()
 		return
 	}
 
-	if len(news) < 5 && query.Title != "" {
-		err := n.Service.Parse(r.Context(), query.Title)
+	if len(news) < 5 && query.Text != "" {
+		err := n.Service.Parse(r.Context(), query.Text)
 		if err != nil {
 			n.Logger.Error().Err(err).Send()
 		}
 	}
 
-	EncodeJSON(w, news, http.StatusOK)
+	EncodeJSON(w, map[string]any{
+		"results":     news,
+		"count":       len(news),
+		"total_count": count,
+	}, http.StatusOK)
 }

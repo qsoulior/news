@@ -42,7 +42,9 @@ func (n *newsMongo) ReplaceOrCreate(ctx context.Context, news entity.News) error
 
 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (any, error) {
 		resultNews := new(entity.News)
-		err := n.collection.FindOne(ctx, bson.M{"link": news.Link}).Decode(resultNews)
+
+		filter := bson.D{{Key: "link", Value: news.Link}}
+		err := n.collection.FindOne(ctx, filter).Decode(resultNews)
 		if err == mongo.ErrNoDocuments {
 			return n.collection.InsertOne(ctx, news)
 		}
@@ -52,7 +54,8 @@ func (n *newsMongo) ReplaceOrCreate(ctx context.Context, news entity.News) error
 		}
 
 		if news.PublishedAt.After(resultNews.PublishedAt) {
-			return n.collection.ReplaceOne(ctx, bson.M{"link": resultNews.Link}, news)
+			filter := bson.D{{Key: "link", Value: resultNews.Link}}
+			return n.collection.ReplaceOne(ctx, filter, news)
 		}
 
 		return nil, nil
@@ -85,7 +88,9 @@ func (n *newsMongo) GetByID(ctx context.Context, id string) (*entity.News, error
 	}
 
 	news := new(entity.News)
-	err = n.collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(news)
+
+	filter := bson.D{{Key: "_id", Value: objectID}}
+	err = n.collection.FindOne(ctx, filter).Decode(news)
 	if err != nil {
 		return nil, fmt.Errorf("n.collection.FindOne.Decode: %w", err)
 	}
@@ -93,32 +98,115 @@ func (n *newsMongo) GetByID(ctx context.Context, id string) (*entity.News, error
 	return news, nil
 }
 
-func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) ([]entity.News, error) {
-	filter := bson.M{
-		"title": primitive.Regex{
-			Pattern: query.Title,
-			Options: "i",
+func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) ([]entity.News, int, error) {
+	match := make(bson.D, 0, 5)
+	if query.Title {
+		match = append(match, bson.E{
+			Key:   "title",
+			Value: primitive.Regex{Pattern: query.Text, Options: "i"},
+		})
+	} else {
+		match = append(match, bson.E{
+			Key:   "$text",
+			Value: bson.D{{Key: "$search", Value: query.Text}},
+		})
+	}
+
+	// TODO: $in
+	match = append(match, bson.E{
+		Key:   "source",
+		Value: primitive.Regex{Pattern: query.Source, Options: "i"},
+	})
+
+	// TODO: authors $elem_match
+	// match = append(match, bson.E{
+	// 	Key:   "authors",
+	// 	Value: "",
+	// })
+
+	tags := make(bson.A, len(query.Tags))
+	for i, tag := range query.Tags {
+		tags[i] = primitive.Regex{Pattern: fmt.Sprintf("^%s$", tag), Options: "i"}
+	}
+
+	if len(tags) > 0 {
+		match = append(match, bson.E{
+			Key:   "tags",
+			Value: bson.D{{Key: "$all", Value: tags}},
+		})
+	}
+
+	categories := make(bson.A, len(query.Categories))
+	for i, category := range query.Categories {
+		categories[i] = primitive.Regex{Pattern: fmt.Sprintf("^%s$", category), Options: "i"}
+	}
+
+	if len(categories) > 0 {
+		match = append(match, bson.E{
+			Key:   "categories",
+			Value: bson.D{{Key: "$all", Value: categories}},
+		})
+	}
+
+	matchStage := bson.D{{
+		Key:   "$match",
+		Value: match,
+	}}
+
+	paginationStage := bson.D{{
+		Key: "$facet",
+		Value: bson.D{
+			{
+				Key: "results",
+				Value: bson.A{
+					bson.D{{Key: "$skip", Value: opts.Skip}},
+					bson.D{{Key: "$limit", Value: opts.Limit}},
+				},
+			},
+			{
+				Key: "total_results",
+				Value: bson.A{
+					bson.D{{Key: "$count", Value: "count"}},
+				},
+			},
 		},
-		"source": primitive.Regex{
-			Pattern: query.Source,
-			Options: "i",
+	}}
+
+	unwindStage := bson.D{{
+		Key:   "$unwind",
+		Value: bson.D{{Key: "path", Value: "$total_results"}},
+	}}
+
+	projectStage := bson.D{{
+		Key: "$project",
+		Value: bson.D{
+			{Key: "results", Value: true},
+			{Key: "total_count", Value: "$total_results.count"},
 		},
-	}
+	}}
 
-	findOpts := options.Find()
-	findOpts.SetSkip(int64(opts.Skip))
-	findOpts.SetLimit(int64(opts.Limit))
-
-	cursor, err := n.collection.Find(ctx, filter, findOpts)
+	pipeline := mongo.Pipeline{matchStage, paginationStage, unwindStage, projectStage}
+	cursor, err := n.collection.Aggregate(ctx, pipeline)
 	if err != nil {
-		return nil, fmt.Errorf("n.collection.Find: %w", err)
+		return nil, 0, fmt.Errorf("n.collection.Aggregate: %w", err)
 	}
 
-	var news []entity.News
-	err = cursor.All(ctx, &news)
-	if err != nil {
-		return nil, fmt.Errorf("cursor.All: %w", err)
+	var res struct {
+		Results    []entity.News `bson:"results"`
+		TotalCount int           `bson:"total_count"`
 	}
 
-	return news, nil
+	defer cursor.Close(ctx)
+	if cursor.Next(ctx) {
+		err = cursor.Decode(&res)
+		if err != nil {
+			return nil, 0, fmt.Errorf("cursor.Decode: %w", err)
+		}
+	}
+
+	if err = cursor.Err(); err != nil {
+		return nil, 0, fmt.Errorf("cursor.Err: %w", err)
+	}
+
+	return res.Results, res.TotalCount, nil
 }

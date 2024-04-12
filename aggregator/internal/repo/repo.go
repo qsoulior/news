@@ -11,7 +11,7 @@ type News interface {
 	ReplaceOrCreate(ctx context.Context, news entity.News) error
 	CreateMany(ctx context.Context, news []entity.News) error
 	GetByID(ctx context.Context, id string) (*entity.News, error)
-	GetByQuery(ctx context.Context, query Query, opts Options) ([]entity.News, error)
+	GetByQuery(ctx context.Context, query Query, opts Options) ([]entity.News, int, error)
 }
 
 type Options struct {
@@ -20,6 +20,9 @@ type Options struct {
 }
 
 type Query struct {
-	Title  string
-	Source string
+	Text       string
+	Title      bool
+	Source     string
+	Tags       []string
+	Categories []string
 }

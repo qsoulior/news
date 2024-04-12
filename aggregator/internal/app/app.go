@@ -83,14 +83,10 @@ func Run(cfg *Config) {
 	})
 
 	// rabbit consumer
-	consumerLog := logger.With().Str("module", "consumer").Logger()
-	runConsumer(sigCtx, &consumerLog, newsService, rmqConn)
-	consumerLog.Info().Msg("started")
+	runConsumer(sigCtx, &logger, newsService, rmqConn)
 
 	// http server
-	serverLog := logger.With().Str("module", "server").Logger()
-	runServer(sigCtx, &serverLog, newsService, cfg.HTTP)
-	serverLog.Info().Msg("started")
+	runServer(sigCtx, &logger, newsService, cfg.HTTP)
 
 	wg.Wait()
 }
@@ -106,7 +102,7 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*r
 		return nil, fmt.Errorf("rabbitmq.New: %w", err)
 	}
 
-	err = rmqConn.Ch.ExchangeDeclare("query", "fanout", true, false, false, false, nil)
+	err = rmqConn.Ch.ExchangeDeclare("queries", "fanout", true, false, false, false, nil)
 	if err != nil {
 		return nil, fmt.Errorf("rmqConn.Ch.ExchangeDeclare: %w", err)
 	}
@@ -135,7 +131,9 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*r
 }
 
 func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News, conn *rabbitmq.Connection) {
-	amqpRouter := amqp.NewRouter(logger, news)
+	log := logger.With().Str("module", "consumer").Logger()
+
+	amqpRouter := amqp.NewRouter(&log, news)
 	rmqConsumer := consumer.New(conn, amqpRouter)
 
 	go func() {
@@ -149,17 +147,21 @@ func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News,
 			case <-timer.C:
 				err := rmqConsumer.Consume(ctx, "news")
 				if err != nil {
-					logger.Error().Err(err).Send()
+					log.Error().Err(err).Send()
 					return
 				}
-				logger.Info().Msg("graceful shutdown")
+				log.Info().Msg("graceful shutdown")
 			}
 		}
 	}()
+
+	log.Info().Msg("started")
 }
 
 func runServer(ctx context.Context, logger *zerolog.Logger, news service.News, cfg ConfigHTTP) {
-	httpRouter := http.NewRouter(logger, news)
+	log := logger.With().Str("module", "server").Logger()
+
+	httpRouter := http.NewRouter(&log, news)
 	httpServer := httpserver.New(httpRouter, httpserver.Addr(cfg.Host, cfg.Port))
 
 	go func() {
@@ -169,9 +171,9 @@ func runServer(ctx context.Context, logger *zerolog.Logger, news service.News, c
 
 		select {
 		case <-ctx.Done():
-			logger.Info().Msg("term signal accepted")
+			log.Info().Msg("term signal accepted")
 		case err := <-httpServer.Err():
-			logger.Error().Err(err).Send()
+			log.Error().Err(err).Send()
 		}
 
 		// http server graceful shutdown
@@ -180,9 +182,11 @@ func runServer(ctx context.Context, logger *zerolog.Logger, news service.News, c
 
 		err := httpServer.Stop(ctx)
 		if err != nil {
-			logger.Error().Err(err).Msg("graceful shutdown")
+			log.Error().Err(err).Msg("graceful shutdown")
 			return
 		}
-		logger.Info().Msg("graceful shutdown")
+		log.Info().Msg("graceful shutdown")
 	}()
+
+	log.Info().Msg("started")
 }
