@@ -48,9 +48,12 @@ func (n *news) parseOne(ctx context.Context, url *newsURL) (*entity.News, error)
 	}
 
 	news := &entity.News{
-		Source:      n.appID,
-		Link:        resp.Request.URL.String(),
-		PublishedAt: url.PublishedAt,
+		NewsHead: entity.NewsHead{
+			Source:      n.appID,
+			PublishedAt: url.PublishedAt,
+		},
+		Link: resp.Request.URL.String(),
+		Tags: make([]string, 0),
 	}
 
 	topic := doc.Find(".topic-page__container")

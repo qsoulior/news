@@ -50,15 +50,17 @@ func (p *NewsPubDate) UnmarshalJSON(b []byte) error {
 
 func (dto *NewsDTO) Entity() *entity.News {
 	entity := &entity.News{
-		Title:       dto.Title,
-		Description: dto.Description,
-		Link:        dto.Link,
-		Source:      dto.SourceID,
-		PublishedAt: time.Time(dto.PubDate),
-		Authors:     make([]string, len(dto.Creator)),
-		Tags:        make([]string, len(dto.Keywords)),
-		Categories:  make([]string, len(dto.Categories)),
-		Content:     dto.Content,
+		NewsHead: entity.NewsHead{
+			Title:       dto.Title,
+			Description: dto.Description,
+			Source:      dto.SourceID,
+			PublishedAt: time.Time(dto.PubDate),
+		},
+		Link:       dto.Link,
+		Authors:    make([]string, len(dto.Creator)),
+		Tags:       make([]string, len(dto.Keywords)),
+		Categories: make([]string, len(dto.Categories)),
+		Content:    dto.Content,
 	}
 
 	copy(entity.Authors, dto.Creator)

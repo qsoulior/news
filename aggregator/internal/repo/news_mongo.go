@@ -98,14 +98,14 @@ func (n *newsMongo) GetByID(ctx context.Context, id string) (*entity.News, error
 	return news, nil
 }
 
-func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) ([]entity.News, int, error) {
+func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) ([]entity.NewsHead, int, error) {
 	match := make(bson.D, 0, 5)
 	if query.Title {
 		match = append(match, bson.E{
 			Key:   "title",
 			Value: primitive.Regex{Pattern: query.Text, Options: "i"},
 		})
-	} else {
+	} else if query.Text != "" {
 		match = append(match, bson.E{
 			Key:   "$text",
 			Value: bson.D{{Key: "$search", Value: query.Text}},
@@ -172,15 +172,18 @@ func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) (
 		},
 	}}
 
-	unwindStage := bson.D{{
-		Key:   "$unwind",
-		Value: bson.D{{Key: "path", Value: "$total_results"}},
-	}}
+	unwindStage := bson.D{{Key: "$unwind", Value: "$total_results"}}
 
 	projectStage := bson.D{{
 		Key: "$project",
 		Value: bson.D{
-			{Key: "results", Value: true},
+			{Key: "results", Value: bson.D{
+				{Key: "_id", Value: true},
+				{Key: "title", Value: true},
+				{Key: "description", Value: true},
+				{Key: "source", Value: true},
+				{Key: "published_at", Value: true},
+			}},
 			{Key: "total_count", Value: "$total_results.count"},
 		},
 	}}
@@ -191,14 +194,14 @@ func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) (
 		return nil, 0, fmt.Errorf("n.collection.Aggregate: %w", err)
 	}
 
-	var res struct {
-		Results    []entity.News `bson:"results"`
-		TotalCount int           `bson:"total_count"`
+	var val struct {
+		Results    []entity.NewsHead `bson:"results"`
+		TotalCount int               `bson:"total_count"`
 	}
 
 	defer cursor.Close(ctx)
 	if cursor.Next(ctx) {
-		err = cursor.Decode(&res)
+		err = cursor.Decode(&val)
 		if err != nil {
 			return nil, 0, fmt.Errorf("cursor.Decode: %w", err)
 		}
@@ -208,5 +211,9 @@ func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) (
 		return nil, 0, fmt.Errorf("cursor.Err: %w", err)
 	}
 
-	return res.Results, res.TotalCount, nil
+	if val.Results == nil {
+		val.Results = make([]entity.NewsHead, 0)
+	}
+
+	return val.Results, val.TotalCount, nil
 }

@@ -42,8 +42,10 @@ func (n *news) parseOne(ctx context.Context, url string) (*entity.News, error) {
 	}
 
 	news := &entity.News{
-		Source: n.appID,
-		Link:   resp.Request.URL.String(),
+		NewsHead: entity.NewsHead{
+			Source: n.appID,
+		},
+		Link: resp.Request.URL.String(),
 	}
 
 	article := doc.Find(".article")

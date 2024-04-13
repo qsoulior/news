@@ -42,7 +42,7 @@ func (n *news) CreateMany(ctx context.Context, news []entity.News) error {
 	return nil
 }
 
-func (n *news) GetByID(ctx context.Context, id string) (*entity.News, error) {
+func (n *news) Get(ctx context.Context, id string) (*entity.News, error) {
 	news, err := n.Repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("n.repo.GetByID: %w", err)
@@ -56,7 +56,7 @@ type (
 	Options = repo.Options
 )
 
-func (n *news) GetByQuery(ctx context.Context, query Query, opts Options) ([]entity.News, int, error) {
+func (n *news) GetHead(ctx context.Context, query Query, opts Options) ([]entity.NewsHead, int, error) {
 	news, count, err := n.Repo.GetByQuery(ctx, query, opts)
 	if err != nil {
 		return nil, 0, fmt.Errorf("n.repo.GetByQuery: %w", err)
