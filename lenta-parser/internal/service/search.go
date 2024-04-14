@@ -11,6 +11,7 @@ import (
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 	"github.com/qsoulior/news/parser/pkg/httpclient/httpresponse"
+	"github.com/rs/zerolog"
 )
 
 type newsSearch struct {
@@ -18,10 +19,13 @@ type newsSearch struct {
 	url string
 }
 
-func NewNewsSearch(appID string, url string, client *httpclient.Client) *newsSearch {
+func NewNewsSearch(appID string, url string, client *httpclient.Client, logger *zerolog.Logger) *newsSearch {
+	log := logger.With().Str("service", "search").Logger()
+
 	news := &news{
 		client: client,
 		appID:  appID,
+		logger: &log,
 	}
 
 	search := &newsSearch{

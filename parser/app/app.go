@@ -22,12 +22,27 @@ import (
 
 var wg sync.WaitGroup
 
-func Run(cfg *Config, searchParser service.Parser, archiveParser service.Parser, feedParser service.Parser) {
+type Options struct {
+	Logger        *zerolog.Logger
+	SearchParser  service.Parser
+	ArchiveParser service.Parser
+	FeedParser    service.Parser
+}
+
+func Run(cfg *Config, opts *Options) {
 	zerolog.DurationFieldUnit = time.Second
-	out := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
-		w.TimeFormat = time.RFC3339
-	})
-	logger := zerolog.New(out).With().Timestamp().Logger()
+	var log zerolog.Logger
+
+	if opts.Logger != nil {
+		log = *opts.Logger
+	} else {
+		out := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
+			w.TimeFormat = time.RFC3339
+		})
+		log = zerolog.New(out)
+	}
+
+	logger := log.With().Timestamp().Logger()
 
 	// notify context
 	sigCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -73,14 +88,14 @@ func Run(cfg *Config, searchParser service.Parser, archiveParser service.Parser,
 	rmqProducer := producer.New(rmqConn)
 
 	// search consumer
-	if searchParser == nil {
+	if opts.SearchParser == nil {
 		logger.Error().Msg("search parser is nil")
 		return
 	}
 
 	searchService := service.NewNews(service.NewsConfig{
 		Repo:   newsRepo,
-		Parser: searchParser,
+		Parser: opts.SearchParser,
 
 		Producer:   rmqProducer,
 		Exchange:   "",
@@ -90,10 +105,10 @@ func Run(cfg *Config, searchParser service.Parser, archiveParser service.Parser,
 	runSearcher(sigCtx, &logger, searchService, rmqConn, queue)
 
 	// archive worker
-	if archiveParser != nil {
+	if opts.ArchiveParser != nil {
 		archiveService := service.NewNews(service.NewsConfig{
 			Repo:   newsRepo,
-			Parser: archiveParser,
+			Parser: opts.ArchiveParser,
 
 			Producer:   rmqProducer,
 			Exchange:   "",
@@ -107,10 +122,10 @@ func Run(cfg *Config, searchParser service.Parser, archiveParser service.Parser,
 	}
 
 	// feed worker
-	if feedParser != nil {
+	if opts.FeedParser != nil {
 		feedService := service.NewNews(service.NewsConfig{
 			Repo:   newsRepo,
-			Parser: feedParser,
+			Parser: opts.FeedParser,
 
 			Producer:   rmqProducer,
 			Exchange:   "",
@@ -178,7 +193,7 @@ func runSearcher(ctx context.Context, logger *zerolog.Logger, news service.News,
 	log := logger.With().Str("module", "searcher").Logger()
 
 	amqpRouter := amqp.NewRouter(&log, news)
-	rmqConsumer := consumer.New(conn, amqpRouter)
+	rmqConsumer := consumer.New(conn, amqpRouter, consumer.Ack(false))
 
 	go func() {
 		wg.Add(1)

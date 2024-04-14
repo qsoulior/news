@@ -10,6 +10,7 @@ import (
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 	"github.com/qsoulior/news/parser/pkg/rssclient"
+	"github.com/rs/zerolog"
 )
 
 const TYPE_ARTICLE = "article"
@@ -29,10 +30,13 @@ type newsFeed struct {
 	urlCache  map[string]time.Time
 }
 
-func NewNewsFeed(appID string, client *httpclient.Client, url string) *newsFeed {
+func NewNewsFeed(appID string, client *httpclient.Client, url string, logger *zerolog.Logger) *newsFeed {
+	log := logger.With().Str("service", "feed").Logger()
+
 	news := &news{
 		appID:  appID,
 		client: client,
+		logger: &log,
 	}
 
 	feed := &newsFeed{

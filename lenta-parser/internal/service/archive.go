@@ -12,6 +12,7 @@ import (
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 	"github.com/qsoulior/news/parser/pkg/httpclient/httpresponse"
+	"github.com/rs/zerolog"
 )
 
 type newsArchive struct {
@@ -19,10 +20,13 @@ type newsArchive struct {
 	url string
 }
 
-func NewNewsArchive(appID string, url string, client *httpclient.Client) *newsArchive {
+func NewNewsArchive(appID string, url string, client *httpclient.Client, logger *zerolog.Logger) *newsArchive {
+	log := logger.With().Str("service", "archive").Logger()
+
 	news := &news{
 		appID:  appID,
 		client: client,
+		logger: &log,
 	}
 
 	archive := &newsArchive{

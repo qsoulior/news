@@ -9,6 +9,7 @@ import (
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 	"github.com/qsoulior/news/parser/pkg/queue"
+	"github.com/rs/zerolog"
 )
 
 const PAGE_LAYOUT = "20060102"
@@ -19,10 +20,19 @@ type newsArchive struct {
 	urls queue.Queue[string]
 }
 
-func NewNewsArchive(appID string, client *httpclient.Client, url string, browser *rod.Browser) *newsArchive {
+func NewNewsArchive(
+	appID string,
+	client *httpclient.Client,
+	url string,
+	browser *rod.Browser,
+	logger *zerolog.Logger,
+) *newsArchive {
+	log := logger.With().Str("service", "archive").Logger()
+
 	news := &news{
 		appID:  appID,
 		client: client,
+		logger: &log,
 	}
 
 	newsView := &newsView{

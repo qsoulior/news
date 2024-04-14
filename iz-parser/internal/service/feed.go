@@ -11,6 +11,7 @@ import (
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 	"github.com/qsoulior/news/parser/pkg/rssclient"
+	"github.com/rs/zerolog"
 )
 
 type Item struct {
@@ -26,10 +27,12 @@ type newsFeed struct {
 	urlCache  map[string]time.Time
 }
 
-func NewNewsFeed(appID string, client *httpclient.Client) *newsFeed {
+func NewNewsFeed(appID string, client *httpclient.Client, logger *zerolog.Logger) *newsFeed {
+	log := logger.With().Str("service", "feed").Logger()
 	news := &news{
 		appID:  appID,
 		client: client,
+		logger: &log,
 	}
 
 	feed := &newsFeed{
@@ -42,6 +45,7 @@ func NewNewsFeed(appID string, client *httpclient.Client) *newsFeed {
 }
 
 func (n *newsFeed) Parse(ctx context.Context, query string, page string) ([]entity.News, string, error) {
+	// input urls
 	urls, err := n.parseURLs(ctx)
 	if err != nil {
 		return nil, "", err
@@ -50,6 +54,22 @@ func (n *newsFeed) Parse(ctx context.Context, query string, page string) ([]enti
 	news, err := n.parseMany(ctx, urls)
 	if err != nil {
 		return nil, "", fmt.Errorf("n.parseMany: %w", err)
+	}
+
+	// set of output urls
+	urlSet := make(map[string]struct{}, len(news))
+	for _, item := range news {
+		u, err := url.Parse(item.Link)
+		if err == nil {
+			urlSet[u.EscapedPath()] = struct{}{}
+		}
+	}
+
+	// delete url that is not in output
+	for _, url := range urls {
+		if _, ok := urlSet[url]; !ok {
+			delete(n.urlCache, url)
+		}
 	}
 
 	return news, "", nil
@@ -70,35 +90,34 @@ func (n *newsFeed) parseURLs(ctx context.Context) ([]string, error) {
 		return nil, fmt.Errorf("n.rssclient.Get: %w", err)
 	}
 
-	// set of rss links
-	links := make(map[string]struct{}, len(items))
+	// set of current rss urls
+	urlSet := make(map[string]struct{}, len(items))
 
 	urls := make([]string, 0, len(items))
 	for _, item := range items {
-		link := item.Link
-		links[link] = struct{}{}
+		u, err := url.Parse(item.Link)
+		if err != nil {
+			return nil, fmt.Errorf("url.Parse: %w", err)
+		}
+
+		url := u.EscapedPath()
+		urlSet[url] = struct{}{}
 
 		pubDate, err := time.Parse(time.RFC1123Z, item.PubDate)
 		if err != nil {
 			return nil, fmt.Errorf("time.Parse: %w", err)
 		}
 
-		if pd, ok := n.urlCache[link]; !ok || pubDate.After(pd) {
-			u, err := url.Parse(item.Link)
-			if err != nil {
-				return nil, fmt.Errorf("url.Parse: %w", err)
-			}
-
-			urls = append(urls, u.EscapedPath())
+		if pd, ok := n.urlCache[url]; !ok || pubDate.After(pd) {
+			urls = append(urls, url)
+			n.urlCache[url] = pubDate
 		}
-
-		n.urlCache[link] = pubDate
 	}
 
-	// clear cache
-	for link := range n.urlCache {
-		if _, ok := links[link]; !ok {
-			delete(n.urlCache, link)
+	// delete urls that are not in current rss
+	for url := range n.urlCache {
+		if _, ok := urlSet[url]; !ok {
+			delete(n.urlCache, url)
 		}
 	}
 

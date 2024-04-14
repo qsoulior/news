@@ -10,6 +10,7 @@ import (
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
 	"github.com/qsoulior/news/parser/pkg/rssclient"
+	"github.com/rs/zerolog"
 )
 
 type Item struct {
@@ -26,10 +27,13 @@ type newsFeed struct {
 	urlCache  map[string]time.Time
 }
 
-func NewNewsFeed(appID string, url string, client *httpclient.Client) *newsFeed {
+func NewNewsFeed(appID string, url string, client *httpclient.Client, logger *zerolog.Logger) *newsFeed {
+	log := logger.With().Str("service", "feed").Logger()
+
 	news := &news{
 		appID:  appID,
 		client: client,
+		logger: &log,
 	}
 
 	feed := &newsFeed{
@@ -53,6 +57,19 @@ func (n *newsFeed) Parse(ctx context.Context, query string, page string) ([]enti
 		return nil, "", fmt.Errorf("n.parseMany: %w", err)
 	}
 
+	// set of output urls
+	urlSet := make(map[string]struct{}, len(news))
+	for _, item := range news {
+		urlSet[item.Link] = struct{}{}
+	}
+
+	// delete url that is not in output
+	for _, url := range urls {
+		if _, ok := urlSet[url.URL]; !ok {
+			delete(n.urlCache, url.URL)
+		}
+	}
+
 	return news, "", nil
 }
 
@@ -71,33 +88,33 @@ func (n *newsFeed) parseURLs(ctx context.Context) ([]*newsURL, error) {
 		return nil, fmt.Errorf("n.rssclient.Get: %w", err)
 	}
 
-	// set of rss links
-	links := make(map[string]struct{}, len(items))
+	// set of current rss urls
+	urlSet := make(map[string]struct{}, len(items))
 
 	urls := make([]*newsURL, 0, len(items))
 	for _, item := range items {
-		link := item.Link
-		links[link] = struct{}{}
+		url := item.Link
+		urlSet[url] = struct{}{}
 
 		pubDate, err := time.Parse(time.RFC1123Z, item.PubDate)
 		if err != nil {
 			return nil, fmt.Errorf("time.Parse: %w", err)
 		}
 
-		if pd, ok := n.urlCache[link]; !ok || pubDate.After(pd) {
+		if pd, ok := n.urlCache[url]; !ok || pubDate.After(pd) {
 			urls = append(urls, &newsURL{
 				URL:         item.Link,
 				PublishedAt: pubDate,
 			})
+			n.urlCache[url] = pubDate
 		}
 
-		n.urlCache[link] = pubDate
 	}
 
-	// clear cache
-	for link := range n.urlCache {
-		if _, ok := links[link]; !ok {
-			delete(n.urlCache, link)
+	// delete urls that are not in current rss
+	for url := range n.urlCache {
+		if _, ok := urlSet[url]; !ok {
+			delete(n.urlCache, url)
 		}
 	}
 

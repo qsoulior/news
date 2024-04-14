@@ -10,16 +10,19 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
+	"github.com/rs/zerolog"
 )
 
 type newsSearch struct {
 	*news
 }
 
-func NewNewsSearch(appID string, client *httpclient.Client) *newsSearch {
+func NewNewsSearch(appID string, client *httpclient.Client, logger *zerolog.Logger) *newsSearch {
+	log := logger.With().Str("service", "search").Logger()
 	news := &news{
 		appID:  appID,
 		client: client,
+		logger: &log,
 	}
 
 	search := &newsSearch{

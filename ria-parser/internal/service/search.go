@@ -8,6 +8,7 @@ import (
 	"github.com/go-rod/rod"
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
+	"github.com/rs/zerolog"
 )
 
 type newsSearch struct {
@@ -15,10 +16,19 @@ type newsSearch struct {
 	*newsView
 }
 
-func NewNewsSearch(appID string, client *httpclient.Client, url string, browser *rod.Browser) *newsSearch {
+func NewNewsSearch(
+	appID string,
+	client *httpclient.Client,
+	url string,
+	browser *rod.Browser,
+	logger *zerolog.Logger,
+) *newsSearch {
+	log := logger.With().Str("service", "search").Logger()
+
 	news := &news{
 		appID:  appID,
 		client: client,
+		logger: &log,
 	}
 
 	newsView := &newsView{

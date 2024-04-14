@@ -22,8 +22,9 @@ func Run(cfg *Config) {
 			RabbitMQ: app.ConfigRabbitMQ(cfg.RabbitMQ),
 			Redis:    app.ConfigRedis(cfg.Redis),
 		},
-		searchParser,
-		archiveParser,
-		nil,
+		&app.Options{
+			SearchParser:  searchParser,
+			ArchiveParser: archiveParser,
+		},
 	)
 }

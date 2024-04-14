@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -12,6 +12,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
+	"github.com/rs/zerolog"
 )
 
 type newsURL struct {
@@ -22,6 +23,7 @@ type newsURL struct {
 type news struct {
 	appID  string
 	client *httpclient.Client
+	logger *zerolog.Logger
 }
 
 func (n *news) parseOne(ctx context.Context, url *newsURL) (*entity.News, error) {
@@ -84,14 +86,15 @@ func (n *news) parseOne(ctx context.Context, url *newsURL) (*entity.News, error)
 
 func (n *news) parseMany(ctx context.Context, urls []*newsURL) ([]entity.News, error) {
 	news := make([]entity.News, 0, len(urls))
-	for _, url := range urls {
+	for _, item := range urls {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 
-		newsItem, err := n.parseOne(ctx, url)
+		newsItem, err := n.parseOne(ctx, item)
 		if err != nil {
-			log.Println(err)
+			u, _ := url.Parse(item.URL)
+			n.logger.Warn().Err(err).Str("url", u.EscapedPath()).Send()
 			continue
 		}
 		news = append(news, *newsItem)

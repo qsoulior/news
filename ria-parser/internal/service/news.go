@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -12,11 +11,13 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/parser/pkg/httpclient"
+	"github.com/rs/zerolog"
 )
 
 type news struct {
 	appID  string
 	client *httpclient.Client
+	logger *zerolog.Logger
 }
 
 func (n *news) parseOne(ctx context.Context, url string) (*entity.News, error) {
@@ -106,7 +107,7 @@ func (n *news) parseMany(ctx context.Context, urls []string) ([]entity.News, err
 
 		newsItem, err := n.parseOne(ctx, url)
 		if err != nil {
-			log.Println(err)
+			n.logger.Warn().Err(err).Str("url", url).Send()
 			continue
 		}
 		news = append(news, *newsItem)
