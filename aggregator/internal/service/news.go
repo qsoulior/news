@@ -51,13 +51,12 @@ func (n *news) Get(ctx context.Context, id string) (*entity.News, error) {
 	return news, nil
 }
 
-type (
-	Query   = repo.Query
-	Options = repo.Options
-)
-
 func (n *news) GetHead(ctx context.Context, query Query, opts Options) ([]entity.NewsHead, int, error) {
-	news, count, err := n.Repo.GetByQuery(ctx, query, opts)
+	if opts.raw.Sort.IsRelevance() && (query.Text == "" || (query.Text != "" && query.Title)) {
+		opts.SetSort(0)
+	}
+
+	news, count, err := n.Repo.GetByQuery(ctx, query, opts.raw)
 	if err != nil {
 		return nil, 0, fmt.Errorf("n.repo.GetByQuery: %w", err)
 	}

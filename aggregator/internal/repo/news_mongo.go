@@ -98,31 +98,47 @@ func (n *newsMongo) GetByID(ctx context.Context, id string) (*entity.News, error
 	return news, nil
 }
 
-func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) ([]entity.NewsHead, int, error) {
-	match := make(bson.D, 0, 5)
-	if query.Title {
-		match = append(match, bson.E{
-			Key:   "title",
-			Value: primitive.Regex{Pattern: query.Text, Options: "i"},
-		})
-	} else if query.Text != "" {
-		match = append(match, bson.E{
-			Key:   "$text",
-			Value: bson.D{{Key: "$search", Value: query.Text}},
+var sortVariants = map[SortOption]bson.D{
+	SortPublishedAtDesc: {{Key: "published_at", Value: -1}},
+	SortPublishedAtAsc:  {{Key: "published_at", Value: 1}},
+	SortRelevanceDesc:   {{Key: "score", Value: -1}},
+	SortRelevanceAsc:    {{Key: "score", Value: 1}},
+}
+
+func (n *newsMongo) parseQuery(query Query) bson.D {
+	doc := make(bson.D, 0, 5)
+	if query.Text != "" {
+		if query.Title {
+			doc = append(doc, bson.E{
+				Key:   "title",
+				Value: primitive.Regex{Pattern: query.Text, Options: "i"},
+			})
+		} else {
+			doc = append(doc, bson.E{
+				Key:   "$text",
+				Value: bson.D{{Key: "$search", Value: query.Text}},
+			})
+		}
+	}
+
+	if len(query.Sources) > 0 {
+		doc = append(doc, bson.E{
+			Key:   "source",
+			Value: bson.D{{Key: "$in", Value: query.Sources}},
 		})
 	}
 
-	// TODO: $in
-	match = append(match, bson.E{
-		Key:   "source",
-		Value: primitive.Regex{Pattern: query.Source, Options: "i"},
-	})
+	authors := make(bson.A, len(query.Authors))
+	for i, tag := range query.Authors {
+		authors[i] = primitive.Regex{Pattern: fmt.Sprintf("^%s$", tag), Options: "i"}
+	}
 
-	// TODO: authors $elem_match
-	// match = append(match, bson.E{
-	// 	Key:   "authors",
-	// 	Value: "",
-	// })
+	if len(authors) > 0 {
+		doc = append(doc, bson.E{
+			Key:   "authors",
+			Value: bson.D{{Key: "$all", Value: authors}},
+		})
+	}
 
 	tags := make(bson.A, len(query.Tags))
 	for i, tag := range query.Tags {
@@ -130,7 +146,7 @@ func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) (
 	}
 
 	if len(tags) > 0 {
-		match = append(match, bson.E{
+		doc = append(doc, bson.E{
 			Key:   "tags",
 			Value: bson.D{{Key: "$all", Value: tags}},
 		})
@@ -142,18 +158,40 @@ func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) (
 	}
 
 	if len(categories) > 0 {
-		match = append(match, bson.E{
+		doc = append(doc, bson.E{
 			Key:   "categories",
 			Value: bson.D{{Key: "$all", Value: categories}},
 		})
 	}
 
-	matchStage := bson.D{{
-		Key:   "$match",
-		Value: match,
-	}}
+	return doc
+}
 
-	paginationStage := bson.D{{
+func (n *newsMongo) parseOptions(opts Options) mongo.Pipeline {
+	pipeline := make(mongo.Pipeline, 0, 4)
+
+	// sort stage
+	if opts.Sort.IsRelevance() {
+		pipeline = append(pipeline, bson.D{{
+			Key: "$set",
+			Value: bson.D{{
+				Key: "score", Value: bson.D{{Key: "$meta", Value: "textScore"}},
+			}},
+		}})
+	}
+
+	sort, ok := sortVariants[opts.Sort]
+	if !ok {
+		sort = sortVariants[SortDefault]
+	}
+
+	pipeline = append(pipeline, bson.D{{
+		Key:   "$sort",
+		Value: sort,
+	}})
+
+	// pagination stage
+	pipeline = append(pipeline, bson.D{{
 		Key: "$facet",
 		Value: bson.D{
 			{
@@ -170,11 +208,29 @@ func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) (
 				},
 			},
 		},
-	}}
+	}})
 
-	unwindStage := bson.D{{Key: "$unwind", Value: "$total_results"}}
+	pipeline = append(pipeline, bson.D{{
+		Key:   "$unwind",
+		Value: "$total_results",
+	}})
 
-	projectStage := bson.D{{
+	return pipeline
+}
+
+func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) ([]entity.NewsHead, int, error) {
+	pipeline := make(mongo.Pipeline, 0, 6)
+
+	// match stage
+	pipeline = append(pipeline, bson.D{{
+		Key:   "$match",
+		Value: n.parseQuery(query),
+	}})
+
+	pipeline = append(pipeline, n.parseOptions(opts)...)
+
+	// project stage
+	pipeline = append(pipeline, bson.D{{
 		Key: "$project",
 		Value: bson.D{
 			{Key: "results", Value: bson.D{
@@ -186,9 +242,8 @@ func (n *newsMongo) GetByQuery(ctx context.Context, query Query, opts Options) (
 			}},
 			{Key: "total_count", Value: "$total_results.count"},
 		},
-	}}
+	}})
 
-	pipeline := mongo.Pipeline{matchStage, paginationStage, unwindStage, projectStage}
 	cursor, err := n.collection.Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, 0, fmt.Errorf("n.collection.Aggregate: %w", err)

@@ -2,8 +2,10 @@ package handler
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 
+	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/aggregator/internal/service"
 	"github.com/rs/zerolog"
 )
@@ -21,28 +23,49 @@ func NewNews(cfg NewsConfig) *news {
 	return &news{cfg}
 }
 
+type GetResponse struct {
+	Results    []entity.NewsHead `json:"results"`
+	Count      int               `json:"count"`
+	TotalCount int               `json:"total_count"`
+}
+
+func (n *news) getInt(values url.Values, key string) (int, bool) {
+	value := values.Get(key)
+	if value == "" {
+		return 0, false
+	}
+
+	valueInt, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, false
+	}
+
+	return valueInt, true
+}
+
 func (n *news) Get(w http.ResponseWriter, r *http.Request) {
 	values := r.URL.Query()
 	query := service.Query{
-		Text:   values.Get("text"),
-		Source: values.Get("source"),
+		Text: values.Get("text"),
+	}
+
+	sources := values["sources[]"]
+	if len(sources) > 0 {
+		query.Sources = make([]string, len(sources))
+		copy(query.Sources, sources)
 	}
 
 	var opts service.Options
-	skip := values.Get("skip")
-	if skip != "" {
-		Skip, err := strconv.Atoi(skip)
-		if err == nil {
-			opts.Skip = Skip
-		}
+	if skip, ok := n.getInt(values, "skip"); ok {
+		opts.SetSkip(skip)
 	}
 
-	limit := values.Get("limit")
-	if limit != "" {
-		Limit, err := strconv.Atoi(limit)
-		if err == nil {
-			opts.Limit = Limit
-		}
+	if limit, ok := n.getInt(values, "limit"); ok {
+		opts.SetLimit(limit)
+	}
+
+	if sort, ok := n.getInt(values, "sort"); ok {
+		opts.SetSort(sort)
 	}
 
 	news, count, err := n.Service.GetHead(r.Context(), query, opts)
@@ -59,9 +82,11 @@ func (n *news) Get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	EncodeJSON(w, map[string]any{
-		"results":     news,
-		"count":       len(news),
-		"total_count": count,
-	}, http.StatusOK)
+	respData := &GetResponse{
+		Results:    news,
+		Count:      len(news),
+		TotalCount: count,
+	}
+
+	EncodeJSON(w, respData, http.StatusOK)
 }
