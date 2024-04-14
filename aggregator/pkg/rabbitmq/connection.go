@@ -29,7 +29,10 @@ func New(ctx context.Context, cfg *Config) (*Connection, error) {
 func (c *Connection) observe(ctx context.Context) {
 	go func(ctx context.Context) {
 		c.Logger.Info().Msg("observer started")
-		if err := <-c.errCh; err != nil {
+		select {
+		case <-ctx.Done():
+			return
+		case <-c.errCh:
 			c.Close()
 			c.reopen(ctx)
 		}
@@ -107,11 +110,11 @@ func (c *Connection) attemptOpen() error {
 }
 
 func (c *Connection) Close() error {
-	if c.Ch != nil && !c.Ch.IsClosed() {
-		if err := c.Ch.Close(); err != nil {
-			return fmt.Errorf("c.Ch.Close: %w", err)
-		}
-	}
+	// if c.Ch != nil && !c.Ch.IsClosed() {
+	// 	if err := c.Ch.Close(); err != nil {
+	// 		return fmt.Errorf("c.Ch.Close: %w", err)
+	// 	}
+	// }
 
 	if c.conn != nil && !c.conn.IsClosed() {
 		if err := c.conn.Close(); err != nil {

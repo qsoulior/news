@@ -134,7 +134,7 @@ func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News,
 	log := logger.With().Str("module", "consumer").Logger()
 
 	amqpRouter := amqp.NewRouter(&log, news)
-	rmqConsumer := consumer.New(conn, amqpRouter)
+	rmqConsumer := consumer.New(conn, amqpRouter, consumer.Ack(false))
 
 	go func() {
 		wg.Add(1)
