@@ -2,9 +2,16 @@
 import { NFlex, NButton, NSelect, NIcon, type SelectOption } from "naive-ui"
 import { IconArrow } from "@/components/icons"
 
-type Type = "relevance" | "date"
-const type = defineModel<Type>("type", {
-  default: "relevance"
+interface Sort {
+  type: "relevance" | "date"
+  ascending: boolean
+}
+
+const sort = defineModel<Sort>("value", {
+  default: {
+    type: "relevance",
+    ascending: true
+  }
 })
 
 const options: SelectOption[] = [
@@ -17,18 +24,14 @@ const options: SelectOption[] = [
     value: "date"
   }
 ]
-
-const ascending = defineModel<boolean>("ascending", {
-  default: true
-})
 </script>
 
 <template>
   <n-flex :wrap="false">
-    <n-select v-model:value="type" :options="options" placeholder="Сортировка" style="width: 12em" />
-    <n-button tertiary title="Изменить направление сортировки" @click="ascending = !ascending">
+    <n-select v-model:value="sort.type" :options="options" placeholder="Сортировка" style="width: 12em" />
+    <n-button tertiary title="Изменить направление сортировки" @click="sort.ascending = !sort.ascending">
       <template #icon>
-        <n-icon :style="ascending ? 'transform: rotate(180deg)' : ''">
+        <n-icon :style="sort.ascending ? 'transform: rotate(180deg)' : ''">
           <IconArrow />
         </n-icon>
       </template>
