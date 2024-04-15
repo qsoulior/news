@@ -31,7 +31,7 @@ const options: SelectOption[] = [
     <n-select v-model:value="sort.type" :options="options" placeholder="Сортировка" style="width: 12em" />
     <n-button tertiary title="Изменить направление сортировки" @click="sort.ascending = !sort.ascending">
       <template #icon>
-        <n-icon :style="sort.ascending ? 'transform: rotate(180deg)' : ''">
+        <n-icon :style="sort.ascending ? '' : 'transform: rotate(180deg)'">
           <IconArrow />
         </n-icon>
       </template>

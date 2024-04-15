@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue"
-import { useRouter } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { NFlex, NCollapseTransition, NButton, NIcon, NText, NDivider } from "naive-ui"
 import type { NewsHead } from "@/entities/news"
 import { IconFilter, IconFilterDismiss } from "@/components/icons"
@@ -11,6 +11,7 @@ import ListContent from "@/components/ListContent.vue"
 import { getNewsHead } from "@/services/news"
 
 const LIMIT = 10
+const route = useRoute()
 
 interface Props {
   page?: number
@@ -22,7 +23,9 @@ const props = withDefaults(defineProps<Props>(), {
 
 const router = useRouter()
 function onUpdatePage(page: number) {
-  router.push({ name: "list", params: { page: page == 1 ? "" : page.toString() } })
+  const query = { ...route.query }
+  query["page"] = page == 1 ? [] : page.toString()
+  router.push({ name: "list", query: query })
 }
 
 const news = ref<NewsHead[]>([])
@@ -53,7 +56,14 @@ watch(
 )
 
 // search
-const searchValue = ref<string>()
+const searchValue = ref<string>("")
+function onSubmitSearch(search: string) {
+  // update query
+  const query = { ...route.query }
+  query["query"] = search
+
+  router.replace({ query: query })
+}
 
 // filter
 const isFilterShown = ref(false)
@@ -73,7 +83,14 @@ const filter = reactive<Filter>({
 })
 
 function onSubmitFilter(filter: Filter) {
-  console.log(filter)
+  // update query
+  const query = { ...route.query }
+  query["sources[]"] = filter.sources
+  query["tags[]"] = filter.tags
+  query["date_start"] = filter.dateStart?.toString() ?? []
+  query["date_end"] = filter.dateEnd?.toString() ?? []
+
+  router.replace({ query: query })
 }
 
 // sort
@@ -83,18 +100,43 @@ interface Sort {
 }
 
 const sort = reactive<Sort>({
-  type: "relevance",
-  ascending: true
+  type: "date",
+  ascending: false
 })
+
+enum SortOption {
+  SortDateDesc,
+  SortDateAsc,
+  SortRelevanceDesc,
+  SortRelevanceAsc
+}
+
+const sortMap = new Map<SortOption, Sort>([
+  [SortOption.SortDateDesc, { type: "date", ascending: false }],
+  [SortOption.SortDateAsc, { type: "date", ascending: true }],
+  [SortOption.SortRelevanceDesc, { type: "relevance", ascending: false }],
+  [SortOption.SortRelevanceAsc, { type: "relevance", ascending: true }]
+])
 
 watch(sort, (sort) => {
   localStorage.setItem("sort", JSON.stringify(sort))
+  // update query
+  const query = { ...route.query }
+
+  for (const [opt, val] of sortMap) {
+    if (val.type == sort.type && val.ascending == sort.ascending) {
+      query["sort"] = opt.toString()
+      break
+    }
+  }
+
+  router.replace({ query: query })
 })
 
 onMounted(() => {
   const sortItem = localStorage.getItem("sort")
   if (sortItem != null) {
-    const { type = "relevance", ascending = true } = JSON.parse(sortItem)
+    const { type = "date", ascending = false } = JSON.parse(sortItem)
     sort.type = type
     sort.ascending = ascending
   }
@@ -103,7 +145,7 @@ onMounted(() => {
 
 <template>
   <n-flex vertical size="large" style="max-width: 50em; margin: auto">
-    <ListSearch v-model:value="searchValue" />
+    <ListSearch v-model:value="searchValue" @submit="onSubmitSearch" />
     <n-collapse-transition :show="isFilterShown">
       <ListFilter v-model:value="filter" @submit="onSubmitFilter" />
     </n-collapse-transition>
