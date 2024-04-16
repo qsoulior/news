@@ -7,11 +7,13 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/qsoulior/news/aggregator/internal/service"
 	"github.com/qsoulior/news/aggregator/internal/transport/http/handler"
+	"github.com/rs/cors"
 	"github.com/rs/zerolog"
 )
 
 func NewRouter(logger *zerolog.Logger, service service.News) http.Handler {
 	mux := chi.NewMux()
+	mux.Use(cors.Default().Handler)
 	mux.Use(middleware.AllowContentType("application/json"))
 	mux.Use(middleware.RealIP)
 	mux.Use(LoggerMiddleware(logger))

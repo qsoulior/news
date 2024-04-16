@@ -6,6 +6,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/rabbitmq/amqp091-go v1.9.0
+	github.com/rs/cors v1.10.1
 	github.com/rs/zerolog v1.32.0
 	go.mongodb.org/mongo-driver v1.14.0
 )
