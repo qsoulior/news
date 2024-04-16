@@ -61,16 +61,19 @@ const news = ref<NewsHead[]>([])
 const count = ref(1000)
 const loading = ref(false)
 
-let timer = 0
-function loadNews(page: number) {
+async function loadNews(page: number) {
   const skip = (page - 1) * LIMIT
-
-  clearTimeout(timer)
   loading.value = true
-  timer = setTimeout(async () => {
+
+  try {
     news.value = await getNewsHead(LIMIT, skip)
+  } catch (err) {
+    if (err instanceof Error) {
+      //
+    }
+  } finally {
     loading.value = false
-  }, 100)
+  }
 }
 
 const pageCount = computed(() => Math.ceil(count.value / LIMIT))
@@ -89,6 +92,8 @@ const searchValue = ref<string>("")
 function onSubmitSearch(search: string) {
   // update query
   const query = { ...route.query }
+  query["page"] = "1"
+
   query["q"] = search != "" ? search : []
 
   router.replace({ query: query })
@@ -114,6 +119,8 @@ const filter = reactive<Filter>({
 function onSubmitFilter(filter: Filter) {
   // update query
   const query = { ...route.query }
+  query["page"] = "1"
+
   query["sources[]"] = filter.sources
   query["tags[]"] = filter.tags
   query["date_start"] = filter.dateStart?.toString() ?? []
@@ -151,6 +158,7 @@ watch(sort, (sort) => {
   localStorage.setItem("sort", JSON.stringify(sort))
   // update query
   const query = { ...route.query }
+  query["page"] = "1"
 
   for (const [opt, val] of sortMap) {
     if (val.type == sort.type && val.ascending == sort.ascending) {
