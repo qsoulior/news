@@ -60,7 +60,7 @@ const searchValue = ref<string>("")
 function onSubmitSearch(search: string) {
   // update query
   const query = { ...route.query }
-  query["query"] = search
+  query["query"] = search != "" ? search : []
 
   router.replace({ query: query })
 }
