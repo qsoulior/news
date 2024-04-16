@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router"
+import { getQueryInt } from "@/router/query"
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -6,13 +7,7 @@ const router = createRouter({
     {
       path: "/:page?",
       name: "list",
-      props: (route) => {
-        const queries = route.query.page
-        const queryRaw = Array.isArray(queries) ? queries[0] : queries
-        if (queryRaw == null) return { page: undefined }
-        const query = parseInt(queryRaw)
-        return { page: isNaN(query) ? undefined : query }
-      },
+      props: (route) => ({ page: getQueryInt(route.query, "page") ?? undefined }),
       component: () => import("@/views/ListView.vue")
     },
     {

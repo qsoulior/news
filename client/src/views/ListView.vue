@@ -9,6 +9,7 @@ import ListFilter from "@/components/ListFilter.vue"
 import ListSearch from "@/components/ListSearch.vue"
 import ListContent from "@/components/ListContent.vue"
 import { getNewsHead } from "@/services/news"
+import { getQueryStr, getQueryStrs, getQueryInt } from "@/router/query"
 
 const LIMIT = 10
 const route = useRoute()
@@ -20,6 +21,34 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   page: 1
 })
+
+function setLocalParams() {
+  const sortItem = localStorage.getItem("sort")
+  if (sortItem != null) {
+    const { type = "date", ascending = false } = JSON.parse(sortItem)
+    sort.type = type
+    sort.ascending = ascending
+  }
+}
+
+function setRouteParams() {
+  const query = route.query
+
+  searchValue.value = getQueryStr(query, "q") ?? ""
+  filter.tags = getQueryStrs(query, "tags[]")
+  filter.sources = getQueryStrs(query, "sources[]")
+  filter.dateStart = getQueryInt(query, "date_start")
+  filter.dateEnd = getQueryInt(query, "date_end")
+
+  const sortQuery = getQueryInt(query, "sort")
+  if (sortQuery != null) {
+    const sortValue = sortMap.get(sortQuery)
+    if (sortValue != undefined) {
+      sort.type = sortValue.type
+      sort.ascending = sortValue.ascending
+    }
+  }
+}
 
 const router = useRouter()
 function onUpdatePage(page: number) {
@@ -60,7 +89,7 @@ const searchValue = ref<string>("")
 function onSubmitSearch(search: string) {
   // update query
   const query = { ...route.query }
-  query["query"] = search != "" ? search : []
+  query["q"] = search != "" ? search : []
 
   router.replace({ query: query })
 }
@@ -134,12 +163,8 @@ watch(sort, (sort) => {
 })
 
 onMounted(() => {
-  const sortItem = localStorage.getItem("sort")
-  if (sortItem != null) {
-    const { type = "date", ascending = false } = JSON.parse(sortItem)
-    sort.type = type
-    sort.ascending = ascending
-  }
+  setLocalParams()
+  setRouteParams()
 })
 </script>
 
