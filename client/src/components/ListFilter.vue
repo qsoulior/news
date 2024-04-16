@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { NFlex, NButton, NSelect, NText, NDatePicker, type SelectOption } from "naive-ui"
 import { IconPlus } from "@/components/icons"
+import { reactive } from "vue"
 
 interface Filter {
   sources: string[]
@@ -10,12 +11,13 @@ interface Filter {
 }
 
 const filter = defineModel<Filter>("value", {
-  default: {
-    sources: [],
-    dateStart: null,
-    dateEnd: null,
-    tags: []
-  }
+  default: () =>
+    reactive({
+      sources: [],
+      dateStart: null,
+      dateEnd: null,
+      tags: []
+    })
 })
 
 const emit = defineEmits<{

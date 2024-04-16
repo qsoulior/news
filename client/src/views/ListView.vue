@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue"
-import { useRoute, useRouter } from "vue-router"
-import { NFlex, NCollapseTransition, NButton, NIcon, NText, NDivider } from "naive-ui"
+import { useRoute, useRouter, type LocationQuery } from "vue-router"
+import { NFlex, NCollapseTransition, NButton, NIcon, NText, NDivider, useMessage } from "naive-ui"
 import type { NewsHead } from "@/entities/news"
 import { IconFilter, IconFilterDismiss } from "@/components/icons"
 import ListSort from "@/components/ListSort.vue"
@@ -13,6 +13,7 @@ import { getQueryStr, getQueryStrs, getQueryInt } from "@/router/query"
 
 const LIMIT = 10
 const route = useRoute()
+const message = useMessage()
 
 interface Props {
   page?: number
@@ -22,81 +23,59 @@ const props = withDefaults(defineProps<Props>(), {
   page: 1
 })
 
-function setLocalParams() {
-  const sortItem = localStorage.getItem("sort")
-  if (sortItem != null) {
-    const { type = "date", ascending = false } = JSON.parse(sortItem)
-    sort.type = type
-    sort.ascending = ascending
-  }
-}
-
-function setRouteParams() {
+function initParams() {
   const query = route.query
 
-  searchValue.value = getQueryStr(query, "q") ?? ""
+  searchText.value = getQueryStr(query, "q") ?? ""
   filter.tags = getQueryStrs(query, "tags[]")
   filter.sources = getQueryStrs(query, "sources[]")
   filter.dateStart = getQueryInt(query, "date_start")
   filter.dateEnd = getQueryInt(query, "date_end")
 
-  const sortQuery = getQueryInt(query, "sort")
+  initSort()
+}
+
+function initSort() {
+  const sortQuery = getQueryInt(route.query, "sort")
   if (sortQuery != null) {
     const sortValue = sortMap.get(sortQuery)
     if (sortValue != undefined) {
       sort.type = sortValue.type
       sort.ascending = sortValue.ascending
+      localStorage.setItem("sort", JSON.stringify(sort))
+      return
     }
   }
+
+  const sortItem = localStorage.getItem("sort")
+  if (sortItem == null) return
+
+  const { type = "date", ascending = false } = JSON.parse(sortItem)
+  if (type == "date" && !ascending) return
+
+  sort.type = type
+  sort.ascending = ascending
+  replaceRouteSort({ ...route.query }, { type, ascending })
 }
 
 const router = useRouter()
-function onUpdatePage(page: number) {
+async function onUpdatePage(page: number) {
   const query = { ...route.query }
   query["page"] = page == 1 ? [] : page.toString()
-  router.push({ name: "list", query: query })
+  router.push({ query: query })
+  return getNews(page)
 }
-
-const news = ref<NewsHead[]>([])
-const count = ref(1000)
-const loading = ref(false)
-
-async function loadNews(page: number) {
-  const skip = (page - 1) * LIMIT
-  loading.value = true
-
-  try {
-    news.value = await getNewsHead(LIMIT, skip)
-  } catch (err) {
-    if (err instanceof Error) {
-      //
-    }
-  } finally {
-    loading.value = false
-  }
-}
-
-const pageCount = computed(() => Math.ceil(count.value / LIMIT))
-watch(
-  () => props.page,
-  (page) => {
-    if (page >= 1 && page <= pageCount.value) {
-      loadNews(page)
-    }
-  },
-  { immediate: true }
-)
 
 // search
-const searchValue = ref<string>("")
-function onSubmitSearch(search: string) {
-  // update query
+const searchText = ref<string>("")
+async function onSubmitSearch(text: string) {
   const query = { ...route.query }
-  query["page"] = "1"
+  delete query["page"]
 
-  query["q"] = search != "" ? search : []
+  query["q"] = text != "" ? text : []
 
   router.replace({ query: query })
+  return getNews(1)
 }
 
 // filter
@@ -116,10 +95,9 @@ const filter = reactive<Filter>({
   tags: []
 })
 
-function onSubmitFilter(filter: Filter) {
-  // update query
+async function onSubmitFilter(filter: Filter) {
   const query = { ...route.query }
-  query["page"] = "1"
+  delete query["page"]
 
   query["sources[]"] = filter.sources
   query["tags[]"] = filter.tags
@@ -127,6 +105,7 @@ function onSubmitFilter(filter: Filter) {
   query["date_end"] = filter.dateEnd?.toString() ?? []
 
   router.replace({ query: query })
+  return getNews(1)
 }
 
 // sort
@@ -154,36 +133,82 @@ const sortMap = new Map<SortOption, Sort>([
   [SortOption.SortRelevanceAsc, { type: "relevance", ascending: true }]
 ])
 
-watch(sort, (sort) => {
-  localStorage.setItem("sort", JSON.stringify(sort))
-  // update query
-  const query = { ...route.query }
-  query["page"] = "1"
-
+function getSortOption(sort: Sort): SortOption | undefined {
   for (const [opt, val] of sortMap) {
     if (val.type == sort.type && val.ascending == sort.ascending) {
-      query["sort"] = opt.toString()
-      break
+      return opt
     }
+  }
+  return undefined
+}
+
+async function onUpdateSort(sort: Sort) {
+  localStorage.setItem("sort", JSON.stringify(sort))
+  const query = { ...route.query }
+  delete query["page"]
+
+  replaceRouteSort(query, sort)
+  return getNews(1)
+}
+
+function replaceRouteSort(query: LocationQuery, sort: Sort) {
+  const opt = getSortOption(sort)
+  if (opt != undefined) {
+    query["sort"] = opt.toString()
   }
 
   router.replace({ query: query })
-})
+}
 
-onMounted(() => {
-  setLocalParams()
-  setRouteParams()
+const news = ref<NewsHead[]>([])
+const count = ref(0)
+const pageCount = computed(() => Math.ceil(count.value / LIMIT))
+
+const loading = ref(false)
+async function getNews(page: number) {
+  // if (page < 1 && page > pageCount.value) return
+
+  const skip = (page - 1) * LIMIT
+  loading.value = true
+
+  try {
+    const { results, totalCount } = await getNewsHead({
+      limit: LIMIT,
+      skip: skip,
+      sort: getSortOption(sort),
+      text: searchText.value,
+      sources: filter.sources,
+      tags: filter.tags
+    })
+
+    news.value = results
+    count.value = totalCount
+  } catch (err) {
+    if (err instanceof Error) {
+      console.error(err)
+      message.error("Ошибка получения новостей")
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+initParams()
+watch(sort, onUpdateSort)
+
+onMounted(async () => {
+  return getNews(props.page)
 })
 </script>
 
 <template>
   <n-flex vertical size="large" style="max-width: 50em; margin: auto">
-    <ListSearch v-model:value="searchValue" @submit="onSubmitSearch" />
+    <ListSearch v-model:value="searchText" @submit="onSubmitSearch" />
     <n-collapse-transition :show="isFilterShown">
       <ListFilter v-model:value="filter" @submit="onSubmitFilter" />
     </n-collapse-transition>
     <n-flex align="center" justify="space-between">
-      <ListSort v-model:value="sort" />
+      <ListSort v-model:value="sort" @update:value="onUpdateSort" />
       <n-flex align="center">
         <n-text v-if="!loading">Результатов: {{ count }}</n-text>
         <n-button tertiary title="Показать фильтры" @click="isFilterShown = !isFilterShown">

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reactive } from "vue"
 import { NFlex, NButton, NSelect, NIcon, type SelectOption } from "naive-ui"
 import { IconArrow } from "@/components/icons"
 
@@ -8,10 +9,11 @@ interface Sort {
 }
 
 const sort = defineModel<Sort>("value", {
-  default: {
-    type: "relevance",
-    ascending: true
-  }
+  default: () =>
+    reactive({
+      type: "relevance",
+      ascending: true
+    })
 })
 
 const options: SelectOption[] = [

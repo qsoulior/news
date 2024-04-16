@@ -1,5 +1,7 @@
-import type { News, NewsHead } from "@/entities/news"
+import { type News, NewsHead } from "@/entities/news"
+import type { NewsDTO, NewsHeadDTO } from "@/entities/news_dto"
 
+const baseURL = new URL("http://localhost:3000")
 const sources = new Map([
   ["ria", "РИА Новости"],
   ["iz", "Известия"],
@@ -15,14 +17,48 @@ export function getSourceImg(source: string): string {
   return new URL(`/src/assets/icons/icon-${source}.png`, import.meta.url).href
 }
 
-export async function getNewsHead(limit: number, skip: number): Promise<NewsHead[]> {
-  return Array.from({ length: limit }, (_, i) => ({
-    id: (skip + i + 1).toString(),
-    title: "Заголовок",
-    description: "Описание",
-    source: "ria",
-    publishedAt: new Date()
-  }))
+interface GetNewsHeadParams {
+  limit: number
+  skip?: number
+  sort?: number
+  text?: string
+  tags?: string[]
+  sources?: string[]
+}
+
+interface GetNewsHeadData {
+  results?: NewsHeadDTO[]
+  count?: number
+  total_count?: number
+}
+
+export async function getNewsHead(params: GetNewsHeadParams) {
+  const url = new URL("/news", baseURL)
+  const urlParams = url.searchParams
+
+  urlParams.set("limit", params.limit.toFixed())
+  if (params.skip) urlParams.set("skip", params.skip.toFixed())
+  if (params.sort) urlParams.set("sort", params.sort.toFixed())
+  if (params.text) urlParams.set("text", params.text)
+  params.tags?.forEach((tag) => urlParams.append("tags[]", tag))
+  params.sources?.forEach((source) => urlParams.append("sources[]", source))
+
+  const resp = await fetch(url, {
+    method: "GET",
+    mode: "cors"
+  })
+
+  if (resp.status != 200) {
+    throw new Error(`incorrect status code: ${resp.status}`)
+  }
+
+  const respData = (await resp.json()) as GetNewsHeadData
+  const results = (respData.results ?? []).map((dto) => NewsHead.from(dto))
+  return {
+    results: results,
+    count: respData.count ?? results?.length ?? 0,
+    totalCount: respData.total_count ?? 0
+  }
 }
 
 export async function getNews(id: string): Promise<News> {
