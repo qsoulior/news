@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/aggregator/internal/service"
 	"github.com/rs/zerolog"
@@ -58,7 +59,7 @@ func (n *news) List(w http.ResponseWriter, r *http.Request) {
 	tags := values["tags[]"]
 	if len(tags) > 0 {
 		query.Tags = make([]string, len(tags))
-		copy(query.Tags, sources)
+		copy(query.Tags, tags)
 	}
 
 	dateFrom := values.Get("date_from")
@@ -116,5 +117,20 @@ func (n *news) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (n *news) Get(w http.ResponseWriter, r *http.Request) {
-	// id := chi.URLParam(r, "id")
+	logger := zerolog.Ctx(r.Context())
+	id := chi.URLParam(r, "id")
+
+	news, err := n.service.Get(r.Context(), id)
+	if err != nil {
+		ErrorJSON(w, "unexpected error while receiving data", http.StatusInternalServerError)
+		logger.Error().Err(err).Send()
+		return
+	}
+
+	if news == nil {
+		ErrorJSON(w, "news with given ID not found", http.StatusNotFound)
+		return
+	}
+
+	EncodeJSON(w, news, http.StatusOK)
 }

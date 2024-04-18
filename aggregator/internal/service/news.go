@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/qsoulior/news/aggregator/entity"
@@ -44,6 +45,10 @@ func (n *news) CreateMany(ctx context.Context, news []entity.News) error {
 
 func (n *news) Get(ctx context.Context, id string) (*entity.News, error) {
 	news, err := n.Repo.GetByID(ctx, id)
+	if errors.Is(err, repo.ErrNotFound) || errors.Is(err, repo.ErrInvalidID) {
+		return nil, nil
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("n.repo.GetByID: %w", err)
 	}

@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/qsoulior/news/aggregator/entity"
@@ -84,13 +85,17 @@ func (n *newsMongo) CreateMany(ctx context.Context, news []entity.News) error {
 func (n *newsMongo) GetByID(ctx context.Context, id string) (*entity.News, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, fmt.Errorf("primitive.ObjectIDFromHex: %w", err)
+		return nil, ErrInvalidID
 	}
 
 	news := new(entity.News)
 
 	filter := bson.D{{Key: "_id", Value: objectID}}
 	err = n.collection.FindOne(ctx, filter).Decode(news)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, ErrNotFound
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("n.collection.FindOne.Decode: %w", err)
 	}
