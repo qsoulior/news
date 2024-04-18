@@ -106,7 +106,7 @@ var sortVariants = map[SortOption]bson.D{
 }
 
 func (n *newsMongo) parseQuery(query Query) bson.D {
-	doc := make(bson.D, 0, 5)
+	doc := make(bson.D, 0, 6)
 	if query.Text != "" {
 		if query.Title {
 			doc = append(doc, bson.E{
@@ -152,15 +152,19 @@ func (n *newsMongo) parseQuery(query Query) bson.D {
 		})
 	}
 
-	categories := make(bson.A, len(query.Categories))
-	for i, category := range query.Categories {
-		categories[i] = primitive.Regex{Pattern: fmt.Sprintf("^%s$", category), Options: "i"}
+	dateCond := make(bson.D, 0, 2)
+	if query.DateFrom != nil {
+		dateCond = append(dateCond, bson.E{Key: "$gte", Value: *query.DateFrom})
 	}
 
-	if len(categories) > 0 {
+	if query.DateTo != nil {
+		dateCond = append(dateCond, bson.E{Key: "$lt", Value: *query.DateTo})
+	}
+
+	if len(dateCond) > 0 {
 		doc = append(doc, bson.E{
-			Key:   "categories",
-			Value: bson.D{{Key: "$all", Value: categories}},
+			Key:   "published_at",
+			Value: dateCond,
 		})
 	}
 

@@ -56,6 +56,11 @@ func (n *news) GetHead(ctx context.Context, query Query, opts Options) ([]entity
 		opts.SetSort(0)
 	}
 
+	if query.DateTo != nil {
+		dateTo := query.DateTo.AddDate(0, 0, 1)
+		query.DateTo = &dateTo
+	}
+
 	news, count, err := n.Repo.GetByQuery(ctx, query, opts.raw)
 	if err != nil {
 		return nil, 0, fmt.Errorf("n.repo.GetByQuery: %w", err)

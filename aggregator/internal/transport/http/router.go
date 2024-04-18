@@ -23,7 +23,7 @@ func NewRouter(logger *zerolog.Logger, service service.News) http.Handler {
 		Logger:  logger,
 		Service: service,
 	})
-	mux.Get("/news", news.Get)
+	mux.Get("/news", news.List)
 
 	return mux
 }

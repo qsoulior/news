@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"time"
 
 	"github.com/qsoulior/news/aggregator/entity"
 )
@@ -15,12 +16,13 @@ type News interface {
 }
 
 type Query struct {
-	Text       string
-	Title      bool
-	Sources    []string
-	Authors    []string
-	Tags       []string
-	Categories []string
+	Text     string
+	Title    bool
+	Sources  []string
+	Authors  []string
+	Tags     []string
+	DateFrom *time.Time
+	DateTo   *time.Time
 }
 
 type Options struct {

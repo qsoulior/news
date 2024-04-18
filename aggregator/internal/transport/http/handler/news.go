@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/qsoulior/news/aggregator/entity"
 	"github.com/qsoulior/news/aggregator/internal/service"
@@ -43,7 +44,7 @@ func (n *news) getInt(values url.Values, key string) (int, bool) {
 	return valueInt, true
 }
 
-func (n *news) Get(w http.ResponseWriter, r *http.Request) {
+func (n *news) List(w http.ResponseWriter, r *http.Request) {
 	values := r.URL.Query()
 	query := service.Query{
 		Text: values.Get("text"),
@@ -53,6 +54,28 @@ func (n *news) Get(w http.ResponseWriter, r *http.Request) {
 	if len(sources) > 0 {
 		query.Sources = make([]string, len(sources))
 		copy(query.Sources, sources)
+	}
+
+	tags := values["tags[]"]
+	if len(tags) > 0 {
+		query.Tags = make([]string, len(tags))
+		copy(query.Tags, sources)
+	}
+
+	dateFrom := values.Get("date_from")
+	if dateFrom != "" {
+		dateFromObj, err := time.Parse(time.DateOnly, dateFrom)
+		if err == nil {
+			query.DateFrom = &dateFromObj
+		}
+	}
+
+	dateTo := values.Get("date_to")
+	if dateTo != "" {
+		dateToObj, err := time.Parse(time.DateOnly, dateTo)
+		if err == nil {
+			query.DateTo = &dateToObj
+		}
 	}
 
 	var opts service.Options
