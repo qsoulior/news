@@ -11,17 +11,12 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type NewsConfig struct {
-	Logger  *zerolog.Logger
-	Service service.News
-}
-
 type news struct {
-	NewsConfig
+	service service.News
 }
 
-func NewNews(cfg NewsConfig) *news {
-	return &news{cfg}
+func NewNews(service service.News) *news {
+	return &news{service}
 }
 
 type GetResponse struct {
@@ -47,6 +42,8 @@ func (n *news) getInt(values url.Values, key string) (int, bool) {
 }
 
 func (n *news) List(w http.ResponseWriter, r *http.Request) {
+	logger := zerolog.Ctx(r.Context())
+
 	values := r.URL.Query()
 	query := service.Query{
 		Text: values.Get("text"),
@@ -93,17 +90,17 @@ func (n *news) List(w http.ResponseWriter, r *http.Request) {
 		opts.SetSort(sort)
 	}
 
-	news, count, err := n.Service.GetHead(r.Context(), query, opts)
+	news, count, err := n.service.GetHead(r.Context(), query, opts)
 	if err != nil {
 		ErrorJSON(w, "unexpected error while receiving data", http.StatusInternalServerError)
-		n.Logger.Error().Err(err).Send()
+		logger.Error().Err(err).Send()
 		return
 	}
 
 	if len(news) < 5 && query.Text != "" {
-		err := n.Service.Parse(r.Context(), query.Text)
+		err := n.service.SendToParse(r.Context(), query.Text)
 		if err != nil {
-			n.Logger.Error().Err(err).Send()
+			logger.Error().Err(err).Send()
 		}
 	}
 
@@ -116,4 +113,8 @@ func (n *news) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	EncodeJSON(w, respData, http.StatusOK)
+}
+
+func (n *news) Get(w http.ResponseWriter, r *http.Request) {
+	// id := chi.URLParam(r, "id")
 }

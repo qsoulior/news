@@ -26,9 +26,10 @@ func (w *loggerWriter) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
-func LoggerMiddleware(logger *zerolog.Logger) Middleware {
+func LoggerMiddleware() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger := zerolog.Ctx(r.Context())
 			writer := &loggerWriter{w, 200, 0}
 			start := time.Now()
 			next.ServeHTTP(writer, r)
@@ -45,9 +46,10 @@ func LoggerMiddleware(logger *zerolog.Logger) Middleware {
 	}
 }
 
-func RecovererMiddleware(logger *zerolog.Logger) Middleware {
+func RecovererMiddleware() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger := zerolog.Ctx(r.Context())
 			defer func() {
 				if r := recover(); r != nil {
 					if r == http.ErrAbortHandler {

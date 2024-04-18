@@ -69,7 +69,7 @@ func (n *news) GetHead(ctx context.Context, query Query, opts Options) ([]entity
 	return news, count, nil
 }
 
-func (n *news) Parse(ctx context.Context, query string) error {
+func (n *news) SendToParse(ctx context.Context, query string) error {
 	err := n.Producer.Produce(ctx, n.Exchange, n.RoutingKey, rabbitmq.Message{
 		ContentType:  "text/plain",
 		DeliveryMode: 2,

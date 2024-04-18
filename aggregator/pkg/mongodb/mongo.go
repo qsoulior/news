@@ -16,7 +16,7 @@ type Mongo struct {
 }
 
 func New(ctx context.Context, cfg *Config) (*Mongo, error) {
-	m := &Mongo{logger: cfg.Logger}
+	m := &Mongo{logger: zerolog.Ctx(ctx)}
 
 	err := m.connect(ctx, cfg)
 	if err != nil {

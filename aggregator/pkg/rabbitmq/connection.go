@@ -6,17 +6,19 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/rs/zerolog"
 )
 
 type Connection struct {
 	*Config
-	Ch    *amqp.Channel
-	conn  *amqp.Connection
-	errCh chan *amqp.Error
+	Ch     *amqp.Channel
+	conn   *amqp.Connection
+	errCh  chan *amqp.Error
+	logger *zerolog.Logger
 }
 
 func New(ctx context.Context, cfg *Config) (*Connection, error) {
-	c := &Connection{Config: cfg}
+	c := &Connection{Config: cfg, logger: zerolog.Ctx(ctx)}
 
 	err := c.open(ctx)
 	if err != nil {
@@ -28,7 +30,7 @@ func New(ctx context.Context, cfg *Config) (*Connection, error) {
 
 func (c *Connection) observe(ctx context.Context) {
 	go func(ctx context.Context) {
-		c.Logger.Info().Msg("observer started")
+		c.logger.Info().Msg("observer started")
 		select {
 		case <-ctx.Done():
 			return
@@ -57,7 +59,7 @@ func (c *Connection) open(ctx context.Context) error {
 				return nil
 			}
 
-			c.Logger.Error().
+			c.logger.Error().
 				Err(err).
 				Int("left", i).
 				Dur("delay", c.AttemptDelay).
@@ -83,7 +85,7 @@ func (c *Connection) reopen(ctx context.Context) error {
 				return nil
 			}
 
-			c.Logger.Error().
+			c.logger.Error().
 				Err(err).
 				Dur("delay", c.AttemptDelay).
 				Msg("attempt to establish a connection")
@@ -105,7 +107,7 @@ func (c *Connection) attemptOpen() error {
 	}
 
 	c.errCh = c.Ch.NotifyClose(make(chan *amqp.Error, 1))
-	c.Logger.Info().Msg("connection established")
+	c.logger.Info().Msg("connection established")
 	return nil
 }
 

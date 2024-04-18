@@ -24,23 +24,24 @@ import (
 var wg sync.WaitGroup
 
 func Run(cfg *Config) {
-	zerolog.DurationFieldUnit = time.Second
-	out := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
-		w.TimeFormat = time.RFC3339
-	})
-	logger := zerolog.New(out).With().Timestamp().Logger()
-
 	// notify context
 	sigCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
+	zerolog.DurationFieldUnit = time.Second
+	out := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
+		w.TimeFormat = time.RFC3339
+	})
+
+	logger := zerolog.New(out).With().Timestamp().Logger()
+	ctx := logger.WithContext(sigCtx)
+
 	// mongo client
 	mongoLog := logger.With().Str("module", "mongo").Logger()
-	mongo, err := mongodb.New(sigCtx, &mongodb.Config{
+	mongo, err := mongodb.New(mongoLog.WithContext(ctx), &mongodb.Config{
 		URI:          cfg.MongoDB.URI,
 		AttemptCount: 5,
 		AttemptDelay: 5 * time.Second,
-		Logger:       &mongoLog,
 	})
 	if err != nil {
 		mongoLog.Error().Err(err).Send()
@@ -66,7 +67,7 @@ func Run(cfg *Config) {
 
 	// rabbit connection
 	rmqLog := logger.With().Str("module", "rmq").Logger()
-	rmqConn, err := runRMQ(sigCtx, &rmqLog, cfg.RabbitMQ)
+	rmqConn, err := runRMQ(rmqLog.WithContext(ctx), cfg.RabbitMQ)
 	if err != nil {
 		rmqLog.Error().Err(err).Send()
 		return
@@ -83,20 +84,20 @@ func Run(cfg *Config) {
 	})
 
 	// rabbit consumer
-	runConsumer(sigCtx, &logger, newsService, rmqConn)
+	runConsumer(ctx, newsService, rmqConn)
 
 	// http server
-	runServer(sigCtx, &logger, newsService, cfg.HTTP)
+	runServer(ctx, newsService, cfg.HTTP)
 
 	wg.Wait()
 }
 
-func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*rabbitmq.Connection, error) {
+func runRMQ(ctx context.Context, cfg ConfigRabbitMQ) (*rabbitmq.Connection, error) {
+	logger := zerolog.Ctx(ctx)
 	rmqConn, err := rabbitmq.New(ctx, &rabbitmq.Config{
 		URL:          cfg.URL,
 		AttemptCount: 5,
 		AttemptDelay: 5 * time.Second,
-		Logger:       logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("rabbitmq.New: %w", err)
@@ -112,7 +113,7 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*r
 		return nil, fmt.Errorf("rmqConn.Ch.QueueDeclare: %w", err)
 	}
 
-	go func() {
+	go func(ctx context.Context) {
 		wg.Add(1)
 		defer wg.Done()
 		<-ctx.Done()
@@ -125,18 +126,18 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, cfg ConfigRabbitMQ) (*r
 			return
 		}
 		logger.Info().Msg("graceful shutdown")
-	}()
+	}(ctx)
 
 	return rmqConn, nil
 }
 
-func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News, conn *rabbitmq.Connection) {
-	log := logger.With().Str("module", "consumer").Logger()
+func runConsumer(ctx context.Context, news service.News, conn *rabbitmq.Connection) {
+	log := zerolog.Ctx(ctx).With().Str("module", "consumer").Logger()
 
 	amqpRouter := amqp.NewRouter(&log, news)
 	rmqConsumer := consumer.New(conn, amqpRouter, consumer.Ack(false))
 
-	go func() {
+	go func(ctx context.Context) {
 		wg.Add(1)
 		defer wg.Done()
 		for timer := time.NewTimer(0); ; timer.Reset(5 * time.Second) {
@@ -153,18 +154,18 @@ func runConsumer(ctx context.Context, logger *zerolog.Logger, news service.News,
 				log.Info().Msg("graceful shutdown")
 			}
 		}
-	}()
+	}(ctx)
 
 	log.Info().Msg("started")
 }
 
-func runServer(ctx context.Context, logger *zerolog.Logger, news service.News, cfg ConfigHTTP) {
-	log := logger.With().Str("module", "server").Logger()
+func runServer(ctx context.Context, news service.News, cfg ConfigHTTP) {
+	log := zerolog.Ctx(ctx).With().Str("module", "server").Logger()
 
-	httpRouter := http.NewRouter(&log, news)
+	httpRouter := http.NewRouter(news)
 	httpServer := httpserver.New(httpRouter, httpserver.Addr(cfg.Host, cfg.Port))
 
-	go func() {
+	go func(ctx context.Context) {
 		wg.Add(1)
 		defer wg.Done()
 		httpServer.Start(ctx)
@@ -186,7 +187,7 @@ func runServer(ctx context.Context, logger *zerolog.Logger, news service.News, c
 			return
 		}
 		log.Info().Msg("graceful shutdown")
-	}()
+	}(log.WithContext(ctx))
 
 	log.Info().Msg("started")
 }
