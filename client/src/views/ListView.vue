@@ -8,7 +8,7 @@ import ListSort from "@/components/ListSort.vue"
 import ListFilter from "@/components/ListFilter.vue"
 import ListSearch from "@/components/ListSearch.vue"
 import ListContent from "@/components/ListContent.vue"
-import { getNewsHead } from "@/services/news"
+import { getNewsHead, toDateString } from "@/services/news"
 import { getQueryStr, getQueryStrs, getQueryInt } from "@/router/query"
 
 const LIMIT = 10
@@ -23,13 +23,16 @@ const props = withDefaults(defineProps<Props>(), {
   page: 1
 })
 
+const fromDateQuery = (query: string | null) => (query != null ? new Date(query).getTime() : null)
+
 function initParams() {
   const query = route.query
 
   searchText.value = getQueryStr(query, "q") ?? ""
   filter.tags = getQueryStrs(query, "tags[]")
   filter.sources = getQueryStrs(query, "sources[]")
-  filter.dateStart = getQueryInt(query, "date_start")
+  filter.dateEnd = fromDateQuery(getQueryStr(query, "date_from"))
+  filter.dateStart = fromDateQuery(getQueryStr(query, "date_to"))
   filter.dateEnd = getQueryInt(query, "date_end")
 
   initSort()
@@ -95,14 +98,16 @@ const filter = reactive<Filter>({
   tags: []
 })
 
+const toDateQuery = (timestamp: number | null) => (timestamp != null ? toDateString(new Date(timestamp)) : [])
+
 async function onSubmitFilter(filter: Filter) {
   const query = { ...route.query }
   delete query["page"]
 
   query["sources[]"] = filter.sources
   query["tags[]"] = filter.tags
-  query["date_start"] = filter.dateStart?.toString() ?? []
-  query["date_end"] = filter.dateEnd?.toString() ?? []
+  query["date_from"] = toDateQuery(filter.dateStart)
+  query["date_to"] = toDateQuery(filter.dateEnd)
 
   router.replace({ query: query })
   return getNews(1)
@@ -172,14 +177,20 @@ async function getNews(page: number) {
   loading.value = true
 
   try {
-    const { results, totalCount } = await getNewsHead({
-      limit: LIMIT,
-      skip: skip,
-      sort: getSortOption(sort),
-      text: searchText.value,
-      sources: filter.sources,
-      tags: filter.tags
-    })
+    const { results, totalCount } = await getNewsHead(
+      {
+        text: searchText.value,
+        sources: filter.sources,
+        tags: filter.tags,
+        dateFrom: filter.dateStart != null ? new Date(filter.dateStart) : undefined,
+        dateTo: filter.dateEnd != null ? new Date(filter.dateEnd) : undefined
+      },
+      {
+        limit: LIMIT,
+        skip: skip,
+        sort: getSortOption(sort)
+      }
+    )
 
     news.value = results
     count.value = totalCount

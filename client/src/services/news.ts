@@ -17,13 +17,24 @@ export function getSourceImg(source: string): string {
   return new URL(`/src/assets/icons/icon-${source}.png`, import.meta.url).href
 }
 
-interface GetNewsHeadParams {
-  limit: number
-  skip?: number
-  sort?: number
+// YYYY-MM-DD
+export function toDateString(date: Date) {
+  const utc = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+  return utc.toISOString().slice(0, 10)
+}
+
+interface GetNewsHeadQuery {
   text?: string
   tags?: string[]
   sources?: string[]
+  dateFrom?: Date
+  dateTo?: Date
+}
+
+interface GetNewsHeadOptions {
+  limit: number
+  skip?: number
+  sort?: number
 }
 
 interface GetNewsHeadData {
@@ -32,16 +43,21 @@ interface GetNewsHeadData {
   total_count?: number
 }
 
-export async function getNewsHead(params: GetNewsHeadParams) {
+export async function getNewsHead(query: GetNewsHeadQuery, opts: GetNewsHeadOptions) {
   const url = new URL("/news", baseURL)
   const urlParams = url.searchParams
 
-  urlParams.set("limit", params.limit.toFixed())
-  if (params.skip) urlParams.set("skip", params.skip.toFixed())
-  if (params.sort) urlParams.set("sort", params.sort.toFixed())
-  if (params.text) urlParams.set("text", params.text)
-  params.tags?.forEach((tag) => urlParams.append("tags[]", tag))
-  params.sources?.forEach((source) => urlParams.append("sources[]", source))
+  // options
+  urlParams.set("limit", opts.limit.toFixed())
+  if (opts.skip) urlParams.set("skip", opts.skip.toFixed())
+  if (opts.sort) urlParams.set("sort", opts.sort.toFixed())
+
+  // query
+  if (query.text) urlParams.set("text", query.text)
+  query.tags?.forEach((tag) => urlParams.append("tags[]", tag))
+  query.sources?.forEach((source) => urlParams.append("sources[]", source))
+  if (query.dateFrom) urlParams.set("date_from", toDateString(query.dateFrom))
+  if (query.dateTo) urlParams.set("date_to", toDateString(query.dateTo))
 
   const resp = await fetch(url, {
     method: "GET",
