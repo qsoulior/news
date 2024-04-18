@@ -26,6 +26,8 @@ func NewNews(cfg NewsConfig) *news {
 
 type GetResponse struct {
 	Results    []entity.NewsHead `json:"results"`
+	Skip       uint              `json:"skip"`
+	Limit      uint              `json:"limit"`
 	Count      int               `json:"count"`
 	TotalCount int               `json:"total_count"`
 }
@@ -107,6 +109,8 @@ func (n *news) List(w http.ResponseWriter, r *http.Request) {
 
 	respData := &GetResponse{
 		Results:    news,
+		Skip:       opts.GetSkip(),
+		Limit:      opts.GetLimit(),
 		Count:      len(news),
 		TotalCount: count,
 	}

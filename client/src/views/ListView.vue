@@ -171,7 +171,11 @@ const pageCount = computed(() => Math.ceil(count.value / LIMIT))
 
 const loading = ref(false)
 async function getNews(page: number) {
-  // if (page < 1 && page > pageCount.value) return
+  if (page < 1) {
+    news.value = []
+    count.value = 0
+    return
+  }
 
   const skip = (page - 1) * LIMIT
   loading.value = true
