@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue"
+import { computed, reactive, ref, watch } from "vue"
 import { useRoute, useRouter, type LocationQuery } from "vue-router"
 import { NFlex, NCollapseTransition, NButton, NIcon, NText, NDivider, useMessage } from "naive-ui"
 import type { NewsHead } from "@/entities/news"
@@ -66,7 +66,6 @@ async function onUpdatePage(page: number) {
   const query = { ...route.query }
   query["page"] = page == 1 ? [] : page.toString()
   router.push({ query: query })
-  return getNews(page)
 }
 
 // search
@@ -78,7 +77,6 @@ async function onSubmitSearch(text: string) {
   query["q"] = text != "" ? text : []
 
   router.replace({ query: query })
-  return getNews(1)
 }
 
 // filter
@@ -110,7 +108,6 @@ async function onSubmitFilter(filter: Filter) {
   query["date_to"] = toDateQuery(filter.dateEnd)
 
   router.replace({ query: query })
-  return getNews(1)
 }
 
 // sort
@@ -153,7 +150,6 @@ async function onUpdateSort(sort: Sort) {
   delete query["page"]
 
   replaceRouteSort(query, sort)
-  return getNews(1)
 }
 
 function replaceRouteSort(query: LocationQuery, sort: Sort) {
@@ -211,9 +207,11 @@ async function getNews(page: number) {
 initParams()
 watch(sort, onUpdateSort)
 
-onMounted(async () => {
-  return getNews(props.page)
-})
+watch(
+  () => route.query,
+  () => getNews(props.page),
+  { immediate: true }
+)
 </script>
 
 <template>
