@@ -1,4 +1,4 @@
-import type { NewsHeadDTO } from "./news_dto"
+import type { NewsDTO, NewsHeadDTO } from "./news_dto"
 
 export class NewsHead {
   id: string
@@ -27,10 +27,32 @@ export class NewsHead {
   }
 }
 
-export interface News extends NewsHead {
+export class News extends NewsHead {
   link: string
   authors: string[]
   tags: string[]
   categories: string[]
   content: string
+
+  constructor() {
+    super()
+    this.link = ""
+    this.authors = []
+    this.tags = []
+    this.categories = []
+    this.content = ""
+  }
+
+  static from(dto: NewsDTO) {
+    const obj = new News()
+    Object.assign(obj, { ...NewsHead.from(dto) })
+
+    obj.link = dto.link
+    obj.authors = dto.authors
+    obj.tags = dto.tags
+    obj.categories = dto.categories
+    obj.content = dto.content
+
+    return obj
+  }
 }

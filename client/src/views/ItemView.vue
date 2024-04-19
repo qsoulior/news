@@ -6,21 +6,23 @@ import ItemSkeleton from "@/components/ItemSkeleton.vue"
 import type { News } from "@/entities/news"
 import { getNews } from "@/services/news"
 
+interface Props {
+  id: string
+}
+
+const props = defineProps<Props>()
+
 const news = ref<News>()
 const loading = ref(false)
 
-let timer = 0
-function loadNews() {
-  clearTimeout(timer)
+async function loadNews(id: string) {
   loading.value = true
-  timer = setTimeout(async () => {
-    news.value = await getNews("")
-    loading.value = false
-  }, 100)
+  news.value = await getNews(id)
+  loading.value = false
 }
 
 onMounted(() => {
-  loadNews()
+  loadNews(props.id)
 })
 </script>
 

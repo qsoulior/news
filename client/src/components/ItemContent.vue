@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { NFlex, NText, NH2, NTag, NDivider, NIcon, NImage } from "naive-ui"
+import { NFlex, NText, NH2, NTag, NDivider, NIcon, NImage, NEllipsis } from "naive-ui"
 import { IconCalendar, IconPerson } from "@/components/icons"
 import ItemContentControl from "@/components/ItemContentControl.vue"
 import { getSourceImg, getSourceName } from "@/services/news"
@@ -43,13 +43,16 @@ const authorsStr = computed(() => props.authors.join(", "))
           <n-h2 style="margin: 0">{{ title }}</n-h2>
           <n-text depth="3">{{ description }}</n-text>
         </n-flex>
-        <n-flex>
-          <n-tag v-for="(tag, i) in tags" :key="i">{{ tag }}</n-tag>
-        </n-flex>
       </n-flex>
       <ItemContentControl :link="link" />
     </n-flex>
-
+    <n-flex>
+      <n-tag class="item-tag" v-for="(tag, i) in tags" :key="i">
+        <n-ellipsis :tooltip="{ delay: 500, contentClass: 'item-tag__tooltip' }">
+          {{ tag }}
+        </n-ellipsis>
+      </n-tag>
+    </n-flex>
     <n-divider style="margin: 1em 0" />
     <n-flex vertical :size="20">
       <n-text v-for="(text, i) in contents" :key="i">{{ text }}</n-text>
@@ -68,3 +71,17 @@ const authorsStr = computed(() => props.authors.join(", "))
     </n-flex>
   </n-flex>
 </template>
+
+<style scoped>
+.item-tag {
+  min-width: 0;
+}
+
+.item-tag :deep(.n-tag__content) {
+  overflow: hidden;
+}
+
+:global(.item-tag__tooltip) {
+  max-width: calc(100vw - 4rem);
+}
+</style>

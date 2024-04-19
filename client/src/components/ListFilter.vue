@@ -105,7 +105,7 @@ function reset() {
         max-tag-count="responsive"
         placeholder="Тэги"
         :show="false"
-        style="max-width: 40em"
+        style="min-width: 0"
       >
         <template #arrow>
           <IconPlus />
