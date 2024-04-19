@@ -204,14 +204,16 @@ async function getNews(page: number) {
   }
 }
 
-initParams()
-watch(sort, onUpdateSort)
-
 watch(
   () => route.query,
-  () => getNews(props.page),
+  () => {
+    initParams()
+    return getNews(props.page)
+  },
   { immediate: true }
 )
+
+watch(sort, onUpdateSort)
 </script>
 
 <template>

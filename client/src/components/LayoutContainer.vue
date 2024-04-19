@@ -45,7 +45,7 @@ onMounted(() => {
     <n-back-top />
     <n-layout>
       <LayoutHeader v-model:theme="themeType" />
-      <n-layout-content style="min-height: calc(100vh - 51px)" content-style="padding: 2rem;" embedded>
+      <n-layout-content style="min-height: calc(100vh - 51px)" content-class="layout-content" embedded>
         <RouterView />
       </n-layout-content>
     </n-layout>
@@ -56,5 +56,15 @@ onMounted(() => {
 <style scoped>
 .n-layout-footer {
   padding: 1rem;
+}
+
+:deep(.layout-content) {
+  padding: 1rem;
+}
+
+@media screen and (min-width: 768px) {
+  :deep(.layout-content) {
+    padding: 2rem;
+  }
 }
 </style>
