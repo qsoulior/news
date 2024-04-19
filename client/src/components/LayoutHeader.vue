@@ -17,7 +17,7 @@ function setThemeDark() {
 <template>
   <n-layout-header bordered>
     <n-flex align="center" justify="space-between">
-      <router-link class="n-layout-header--home" :to="{ name: 'list' }" style="text-decoration: none">
+      <router-link :to="{ name: 'list' }" style="text-decoration: none">
         <n-text>Новости</n-text>
       </router-link>
       <n-flex size="small">

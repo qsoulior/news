@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { NCard, NFlex, NText, NImage } from "naive-ui"
+import { NCard, NFlex, NText, NAvatar } from "naive-ui"
 import { getSourceImg, getSourceName } from "@/services/news"
 
 const props = defineProps<{
@@ -24,7 +24,7 @@ const sourceName = computed(() => getSourceName(props.source))
         <n-flex justify="space-between">
           <n-text depth="3">{{ publishedAt.toLocaleString() }}</n-text>
           <n-flex size="small" align="center">
-            <n-image :src="sourceImg" width="18" preview-disabled />
+            <n-avatar :src="sourceImg" :size="18" color="transparent" />
             <n-text depth="3">{{ sourceName }}</n-text>
           </n-flex>
         </n-flex>

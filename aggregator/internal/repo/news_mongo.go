@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/qsoulior/news/aggregator/entity"
 	"go.mongodb.org/mongo-driver/bson"
@@ -116,7 +117,7 @@ func (n *newsMongo) parseQuery(query Query) bson.D {
 		if query.Title {
 			doc = append(doc, bson.E{
 				Key:   "title",
-				Value: primitive.Regex{Pattern: query.Text, Options: "i"},
+				Value: primitive.Regex{Pattern: regexp.QuoteMeta(query.Text), Options: "i"},
 			})
 		} else {
 			doc = append(doc, bson.E{
@@ -134,8 +135,8 @@ func (n *newsMongo) parseQuery(query Query) bson.D {
 	}
 
 	authors := make(bson.A, len(query.Authors))
-	for i, tag := range query.Authors {
-		authors[i] = primitive.Regex{Pattern: fmt.Sprintf("^%s$", tag), Options: "i"}
+	for i, author := range query.Authors {
+		authors[i] = primitive.Regex{Pattern: fmt.Sprintf("^%s$", regexp.QuoteMeta(author)), Options: "i"}
 	}
 
 	if len(authors) > 0 {
@@ -147,7 +148,7 @@ func (n *newsMongo) parseQuery(query Query) bson.D {
 
 	tags := make(bson.A, len(query.Tags))
 	for i, tag := range query.Tags {
-		tags[i] = primitive.Regex{Pattern: fmt.Sprintf("^%s$", tag), Options: "i"}
+		tags[i] = primitive.Regex{Pattern: fmt.Sprintf("^%s$", regexp.QuoteMeta(tag)), Options: "i"}
 	}
 
 	if len(tags) > 0 {

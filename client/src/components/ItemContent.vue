@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { NFlex, NText, NH2, NTag, NDivider, NIcon, NImage, NEllipsis } from "naive-ui"
+import { NFlex, NText, NH2, NTag, NDivider, NIcon, NAvatar, NEllipsis } from "naive-ui"
 import { IconCalendar, IconPerson } from "@/components/icons"
 import ItemContentControl from "@/components/ItemContentControl.vue"
 import { getSourceImg, getSourceName } from "@/services/news"
@@ -26,10 +26,12 @@ const authorsStr = computed(() => props.authors.join(", "))
 <template>
   <n-flex vertical size="large" style="max-width: 50em; margin: auto">
     <n-flex align="center" justify="space-between">
-      <n-flex size="small" align="center">
-        <n-image :src="sourceImg" width="18" preview-disabled :alt="source" />
-        <n-text>{{ sourceName }}</n-text>
-      </n-flex>
+      <router-link class="item-source" :to="{ name: 'list', query: { 'sources[]': source } }">
+        <n-flex size="small" align="center">
+          <n-avatar :src="sourceImg" :size="18" color="transparent" />
+          <n-text>{{ sourceName }}</n-text>
+        </n-flex>
+      </router-link>
       <n-flex v-if="publishedAt" size="small" align="center">
         <n-icon :size="20">
           <IconCalendar />
@@ -47,11 +49,13 @@ const authorsStr = computed(() => props.authors.join(", "))
       <ItemContentControl :link="link" />
     </n-flex>
     <n-flex>
-      <n-tag class="item-tag" v-for="(tag, i) in tags" :key="i">
-        <n-ellipsis :tooltip="{ delay: 500, contentClass: 'item-tag__tooltip' }">
-          {{ tag }}
-        </n-ellipsis>
-      </n-tag>
+      <router-link class="item-tag" v-for="(tag, i) in tags" :key="i" :to="{ name: 'list', query: { 'tags[]': tag } }">
+        <n-tag>
+          <n-ellipsis :tooltip="{ delay: 500, contentClass: 'item-tag__tooltip' }">
+            {{ tag }}
+          </n-ellipsis>
+        </n-tag>
+      </router-link>
     </n-flex>
     <n-divider style="margin: 1em 0" />
     <n-flex vertical :size="20">
@@ -73,8 +77,21 @@ const authorsStr = computed(() => props.authors.join(", "))
 </template>
 
 <style scoped>
+.item-source {
+  text-decoration: none;
+}
+
 .item-tag {
   min-width: 0;
+}
+
+.item-source .n-tag:hover,
+.item-tag .n-tag:hover {
+  cursor: pointer;
+}
+
+.item-tag .n-tag {
+  max-width: 100%;
 }
 
 .item-tag :deep(.n-tag__content) {
