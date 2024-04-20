@@ -78,7 +78,7 @@ func Run(cfg *Config) {
 	rmqProducer := producer.New(rmqConn)
 	newsService := service.NewNews(service.NewsConfig{
 		Producer:   rmqProducer,
-		Exchange:   "queries",
+		Exchange:   "query",
 		RoutingKey: "",
 		Repo:       newsRepo,
 	})
@@ -103,7 +103,7 @@ func runRMQ(ctx context.Context, cfg ConfigRabbitMQ) (*rabbitmq.Connection, erro
 		return nil, fmt.Errorf("rabbitmq.New: %w", err)
 	}
 
-	err = rmqConn.Ch.ExchangeDeclare("queries", "fanout", true, false, false, false, nil)
+	err = rmqConn.Ch.ExchangeDeclare("query", "fanout", true, false, false, false, nil)
 	if err != nil {
 		return nil, fmt.Errorf("rmqConn.Ch.ExchangeDeclare: %w", err)
 	}
@@ -113,8 +113,8 @@ func runRMQ(ctx context.Context, cfg ConfigRabbitMQ) (*rabbitmq.Connection, erro
 		return nil, fmt.Errorf("rmqConn.Ch.QueueDeclare: %w", err)
 	}
 
+	wg.Add(1)
 	go func(ctx context.Context) {
-		wg.Add(1)
 		defer wg.Done()
 		<-ctx.Done()
 		logger.Info().Msg("term signal accepted")
@@ -137,8 +137,8 @@ func runConsumer(ctx context.Context, news service.News, conn *rabbitmq.Connecti
 	amqpRouter := amqp.NewRouter(&log, news)
 	rmqConsumer := consumer.New(conn, amqpRouter, consumer.Ack(false))
 
+	wg.Add(1)
 	go func(ctx context.Context) {
-		wg.Add(1)
 		defer wg.Done()
 		for timer := time.NewTimer(0); ; timer.Reset(5 * time.Second) {
 			select {
@@ -165,8 +165,8 @@ func runServer(ctx context.Context, news service.News, cfg ConfigHTTP) {
 	httpRouter := http.NewRouter(news)
 	httpServer := httpserver.New(httpRouter, httpserver.Addr(cfg.Host, cfg.Port))
 
+	wg.Add(1)
 	go func(ctx context.Context) {
-		wg.Add(1)
 		defer wg.Done()
 		httpServer.Start(ctx)
 

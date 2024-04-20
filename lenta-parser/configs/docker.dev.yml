@@ -1,0 +1,13 @@
+rabbitmq:
+  url: "amqp://devuser:test123@rabbitmq:5672"
+
+redis:
+  url: "redis://:test123@lenta-cache:6379"
+
+api:
+  search:
+    url: "https://lenta.ru"
+  archive:
+    url: "https://api.lenta.ru"
+  feed:
+    url: "https://lenta.ru"

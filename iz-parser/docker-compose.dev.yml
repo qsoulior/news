@@ -5,3 +5,20 @@ services:
       - 4002:6379
     environment:
       REDIS_PASSWORD: test123
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "$$REDIS_PASSWORD", "ping" ]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+
+  iz-parser:
+    build:
+      context: ../
+      dockerfile: ./iz-parser/app.Dockerfile
+    depends_on:
+      iz-cache:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./configs:/app/configs

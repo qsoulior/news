@@ -1,0 +1,8 @@
+rabbitmq:
+  url: "amqp://devuser:test123@rabbitmq:5672"
+
+redis:
+  url: "redis://:test123@ria-cache:6379"
+
+api:
+  url: "https://ria.ru"

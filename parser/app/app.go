@@ -167,6 +167,11 @@ func runRMQ(ctx context.Context, url string, queueName string) (*rabbitmq.Connec
 		return nil, "", fmt.Errorf("rabbitmq.New: %w", err)
 	}
 
+	err = rmqConn.Ch.ExchangeDeclare("query", "fanout", true, false, false, false, nil)
+	if err != nil {
+		return nil, "", fmt.Errorf("rmqConn.Ch.ExchangeDeclare: %w", err)
+	}
+
 	queue, err := rmqConn.Ch.QueueDeclare(queueName, true, false, false, false, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("rmqConn.Ch.QueueDeclare: %w", err)
@@ -177,8 +182,8 @@ func runRMQ(ctx context.Context, url string, queueName string) (*rabbitmq.Connec
 		return nil, "", fmt.Errorf("rmqConn.Ch.QueueBind: %w", err)
 	}
 
+	wg.Add(1)
 	go func(ctx context.Context) {
-		wg.Add(1)
 		defer wg.Done()
 		<-ctx.Done()
 		logger.Info().Msg("term signal accepted")
@@ -201,8 +206,8 @@ func runSearcher(ctx context.Context, news service.News, conn *rabbitmq.Connecti
 	amqpRouter := amqp.NewRouter(&log, news)
 	rmqConsumer := consumer.New(conn, amqpRouter, consumer.Ack(false))
 
+	wg.Add(1)
 	go func(ctx context.Context) {
-		wg.Add(1)
 		defer wg.Done()
 		for timer := time.NewTimer(0); ; timer.Reset(5 * time.Second) {
 			select {
@@ -226,8 +231,8 @@ func runSearcher(ctx context.Context, news service.News, conn *rabbitmq.Connecti
 func runWorker(ctx context.Context, worker worker.Worker) {
 	logger := zerolog.Ctx(ctx)
 
+	wg.Add(1)
 	go func(ctx context.Context) {
-		wg.Add(1)
 		defer wg.Done()
 		err := worker.Run(ctx)
 		if err != nil {

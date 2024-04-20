@@ -25,5 +25,7 @@ func (n *news) Handle(ctx context.Context, msg *rabbitmq.Delivery) {
 	count, _, err := n.Service.Parse(ctx, string(msg.Body), "")
 	if err != nil {
 		n.Logger.Error().Err(err).Int("count", count).Send()
+		return
 	}
+	n.Logger.Info().Int("count", count).Msg("parsed")
 }

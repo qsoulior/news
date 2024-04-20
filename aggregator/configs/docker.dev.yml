@@ -1,0 +1,11 @@
+rabbitmq:
+  url: "amqp://devuser:test123@rabbitmq:5672"
+
+mongodb:
+  uri: "mongodb://devuser:test123@db:27017/?connect=direct"
+
+http:
+  host: "0.0.0.0"
+  port: 3000
+  origins:
+    - "localhost:5173"

@@ -1,0 +1,12 @@
+rabbitmq:
+  url: "amqp://devuser:test123@rabbitmq:5672"
+
+redis:
+  url: "redis://:test123@newsdata-cache:6379"
+
+api:
+  url: "https://newsdata.io/api/1"
+  search:
+    access_key: "pub_"
+  archive:
+    access_key: "pub_"
