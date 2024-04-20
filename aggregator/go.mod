@@ -8,7 +8,7 @@ require (
 	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/rs/cors v1.10.1
 	github.com/rs/zerolog v1.32.0
-	go.mongodb.org/mongo-driver v1.14.0
+	go.mongodb.org/mongo-driver v1.15.0
 )
 
 require (

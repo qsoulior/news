@@ -61,8 +61,8 @@ github.com/go-kit/kit v0.8.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2
 github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9GBnD5lWE=
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
 github.com/go-rod/rod v0.113.0/go.mod h1:aiedSEFg5DwG/fnNbUOTPMTTWX3MRj6vIs/a684Mthw=
-github.com/go-rod/rod v0.114.8 h1:2Mr2kO17blDAwWU4+eOBPgRf0w+6bfUxsPc7Nzd9VXk=
-github.com/go-rod/rod v0.114.8/go.mod h1:aiedSEFg5DwG/fnNbUOTPMTTWX3MRj6vIs/a684Mthw=
+github.com/go-rod/rod v0.115.0 h1:xL+4BOr4sEGVphDPqpkSYWHwDOVmoCbZUmVZhEEUK+4=
+github.com/go-rod/rod v0.115.0/go.mod h1:aiedSEFg5DwG/fnNbUOTPMTTWX3MRj6vIs/a684Mthw=
 github.com/go-rod/stealth v0.4.9 h1:X2PmQk4DUF2wzw6GOsWjW/glb8K5ebnftbEvLh7MlZ4=
 github.com/go-rod/stealth v0.4.9/go.mod h1:eAzyvw8c0iAd5nJJsSWeh0fQ5z94vCIfdi1hUmYDimc=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
@@ -217,8 +217,8 @@ github.com/ysmood/gop v0.0.2/go.mod h1:rr5z2z27oGEbyB787hpEcx4ab8cCiPnKxn0SUHt6x
 github.com/ysmood/gop v0.2.0 h1:+tFrG0TWPxT6p9ZaZs+VY+opCvHU8/3Fk6BaNv6kqKg=
 github.com/ysmood/gop v0.2.0/go.mod h1:rr5z2z27oGEbyB787hpEcx4ab8cCiPnKxn0SUHt6xzk=
 github.com/ysmood/got v0.34.1/go.mod h1:yddyjq/PmAf08RMLSwDjPyCvHvYed+WjHnQxpH851LM=
-github.com/ysmood/got v0.39.4 h1:8ru7J25Zmf/sMTNYOF2172xVkjQrPMJ3R5d6uymoqL8=
-github.com/ysmood/got v0.39.4/go.mod h1:W7DdpuX6skL3NszLmAsC5hT7JAhuLZhByVzHTq874Qg=
+github.com/ysmood/got v0.39.5 h1:RnwtdeON7UQMsXA/6US9VslYOmlD3uy4GykWxAlgsMs=
+github.com/ysmood/got v0.39.5/go.mod h1:W7DdpuX6skL3NszLmAsC5hT7JAhuLZhByVzHTq874Qg=
 github.com/ysmood/gotrace v0.6.0 h1:SyI1d4jclswLhg7SWTL6os3L1WOKeNn/ZtzVQF8QmdY=
 github.com/ysmood/gotrace v0.6.0/go.mod h1:TzhIG7nHDry5//eYZDYcTzuJLYQIkykJzCRIo4/dzQM=
 github.com/ysmood/gson v0.7.3 h1:QFkWbTH8MxyUTKPkVWAENJhxqdBa4lYTQWqZCiLG6kE=

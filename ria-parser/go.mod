@@ -9,7 +9,7 @@ replace github.com/qsoulior/news/parser => ../parser
 require (
 	github.com/DataHenHQ/useragent v0.1.0
 	github.com/PuerkitoBio/goquery v1.9.1
-	github.com/go-rod/rod v0.114.8
+	github.com/go-rod/rod v0.115.0
 	github.com/go-rod/stealth v0.4.9
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/qsoulior/news/aggregator v0.0.0-00010101000000-000000000000
@@ -30,7 +30,7 @@ require (
 	github.com/redis/go-redis/v9 v9.5.1 // indirect
 	github.com/ysmood/fetchup v0.2.4 // indirect
 	github.com/ysmood/goob v0.4.0 // indirect
-	github.com/ysmood/got v0.39.4 // indirect
+	github.com/ysmood/got v0.39.5 // indirect
 	github.com/ysmood/gson v0.7.3 // indirect
 	github.com/ysmood/leakless v0.8.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
