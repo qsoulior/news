@@ -30,17 +30,17 @@ func (f *feed) Run(ctx context.Context) error {
 			timer.Stop()
 			return nil
 		case <-timer.C:
-			_, err := f.news.Parse(ctx, "", "")
+			count, _, err := f.news.Parse(ctx, "", "")
 			if err == nil {
 				delay = f.delay
-				f.logger.Info().Dur("delay", delay).Msg("parsed")
+				f.logger.Info().Int("count", count).Dur("delay", delay).Msg("parsed")
 			} else {
 				if delay > 0 {
 					delay *= 2
 				} else {
 					delay = f.delay
 				}
-				f.logger.Error().Err(err).Dur("delay", delay).Send()
+				f.logger.Error().Err(err).Int("count", count).Dur("delay", delay).Send()
 			}
 
 			timer.Reset(delay)

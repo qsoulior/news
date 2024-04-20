@@ -36,28 +36,32 @@ func NewNews(cfg NewsConfig) *news {
 	}
 }
 
-func (n *news) Parse(ctx context.Context, query string, page string) (string, error) {
+func (n *news) Parse(ctx context.Context, query string, page string) (int, string, error) {
+	count := 0
+
 	results, page, err := n.Parser.Parse(ctx, query, page)
 	if err != nil {
-		return "", fmt.Errorf("n.Parser.Parse: %w", err)
+		return count, "", fmt.Errorf("n.Parser.Parse: %w", err)
 	}
 
 	for _, result := range results {
 		body, err := json.Marshal(result)
 		if err != nil {
-			return "", fmt.Errorf("json.Marshal: %w", err)
+			return count, "", fmt.Errorf("json.Marshal: %w", err)
 		}
 
 		if err := n.produce(ctx, body); err == nil {
+			count++
 			continue
 		}
 
 		if err := n.Repo.Create(ctx, string(body)); err != nil {
-			return "", fmt.Errorf("n.Repo.Create: %w", err)
+			return count, "", fmt.Errorf("n.Repo.Create: %w", err)
 		}
+		count++
 	}
 
-	return page, nil
+	return count, page, nil
 }
 
 func (n *news) Release(ctx context.Context) (int, error) {

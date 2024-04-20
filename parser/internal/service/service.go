@@ -3,7 +3,7 @@ package service
 import "context"
 
 type News interface {
-	Parse(ctx context.Context, query string, page string) (string, error)
+	Parse(ctx context.Context, query string, page string) (int, string, error)
 	Release(ctx context.Context) (int, error)
 }
 

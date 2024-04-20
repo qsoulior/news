@@ -22,8 +22,8 @@ func NewNews(cfg NewsConfig) *news {
 }
 
 func (n *news) Handle(ctx context.Context, msg *rabbitmq.Delivery) {
-	_, err := n.Service.Parse(ctx, string(msg.Body), "")
+	count, _, err := n.Service.Parse(ctx, string(msg.Body), "")
 	if err != nil {
-		n.Logger.Error().Err(err).Send()
+		n.Logger.Error().Err(err).Int("count", count).Send()
 	}
 }

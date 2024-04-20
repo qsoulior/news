@@ -45,7 +45,7 @@ func (a *archive) work(ctx context.Context, page string) {
 			timer.Stop()
 			return
 		case <-timer.C:
-			nextPage, err := a.news.Parse(ctx, "", page)
+			count, nextPage, err := a.news.Parse(ctx, "", page)
 			if err == nil {
 				err = a.page.Set(ctx, nextPage)
 				if err != nil {
@@ -53,7 +53,7 @@ func (a *archive) work(ctx context.Context, page string) {
 				}
 
 				delay = a.delay
-				a.logger.Info().Str("page", page).Str("next_page", nextPage).Dur("delay", delay).Msg("parsed")
+				a.logger.Info().Int("count", count).Str("page", page).Str("next_page", nextPage).Dur("delay", delay).Msg("parsed")
 				page = nextPage
 			} else {
 				if delay > 0 {
@@ -61,7 +61,7 @@ func (a *archive) work(ctx context.Context, page string) {
 				} else {
 					delay = a.delay
 				}
-				a.logger.Error().Str("page", page).Err(err).Dur("delay", delay).Send()
+				a.logger.Error().Int("count", count).Str("page", page).Err(err).Dur("delay", delay).Send()
 			}
 
 			timer.Reset(delay)
