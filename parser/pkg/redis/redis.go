@@ -15,7 +15,7 @@ type Redis struct {
 }
 
 func New(ctx context.Context, cfg *RedisConfig) (*Redis, error) {
-	r := &Redis{logger: cfg.Logger}
+	r := &Redis{logger: zerolog.Ctx(ctx)}
 
 	err := r.open(cfg)
 	if err != nil {

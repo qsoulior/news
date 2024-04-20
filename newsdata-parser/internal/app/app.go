@@ -18,13 +18,13 @@ func Run(cfg *Config) {
 
 	app.Run(
 		&app.Config{
-			ID:       appID,
-			RabbitMQ: app.ConfigRabbitMQ(cfg.RabbitMQ),
-			Redis:    app.ConfigRedis(cfg.Redis),
-		},
-		&app.Options{
+			ID:            appID,
 			SearchParser:  searchParser,
 			ArchiveParser: archiveParser,
+		},
+		&app.Options{
+			RabbitURL: cfg.RabbitMQ.URL,
+			RedisURL:  cfg.Redis.URL,
 		},
 	)
 }

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"net/http/cookiejar"
 	"time"
 
 	"github.com/qsoulior/news/iz-parser/internal/service"
@@ -17,11 +18,17 @@ func Run(cfg *Config) {
 	})
 	logger := zerolog.New(out).With().Timestamp().Logger()
 
+	cookiejar, err := cookiejar.New(nil)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to init cookiejar")
+	}
+
 	client := httpclient.New(
 		httpclient.URL(cfg.API.URL),
 		httpclient.Headers(map[string]string{
 			"Referer": cfg.API.URL,
 		}),
+		httpclient.CookieJar(cookiejar),
 	)
 
 	searchParser := service.NewNewsSearch(appID, client, &logger)
@@ -30,15 +37,15 @@ func Run(cfg *Config) {
 
 	app.Run(
 		&app.Config{
-			ID:       appID,
-			RabbitMQ: app.ConfigRabbitMQ(cfg.RabbitMQ),
-			Redis:    app.ConfigRedis(cfg.Redis),
-		},
-		&app.Options{
+			ID:            appID,
 			SearchParser:  searchParser,
 			ArchiveParser: archiveParser,
 			FeedParser:    feedParser,
 			Logger:        &logger,
+		},
+		&app.Options{
+			RabbitURL: cfg.RabbitMQ.URL,
+			RedisURL:  cfg.Redis.URL,
 		},
 	)
 }

@@ -22,19 +22,29 @@ import (
 
 var wg sync.WaitGroup
 
-type Options struct {
+type Config struct {
+	ID            string
 	Logger        *zerolog.Logger
 	SearchParser  service.Parser
 	ArchiveParser service.Parser
 	FeedParser    service.Parser
 }
 
+type Options struct {
+	RabbitURL string
+	RedisURL  string
+}
+
 func Run(cfg *Config, opts *Options) {
+	// notify context
+	sigCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
 	zerolog.DurationFieldUnit = time.Second
 	var log zerolog.Logger
 
-	if opts.Logger != nil {
-		log = *opts.Logger
+	if cfg.Logger != nil {
+		log = *cfg.Logger
 	} else {
 		out := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
 			w.TimeFormat = time.RFC3339
@@ -43,24 +53,20 @@ func Run(cfg *Config, opts *Options) {
 	}
 
 	logger := log.With().Timestamp().Logger()
-
-	// notify context
-	sigCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
+	ctx := logger.WithContext(sigCtx)
 
 	// redis client
 	redisLog := logger.With().Str("module", "redis").Logger()
-	redis, err := redis.New(sigCtx, &redis.RedisConfig{
-		URL:          cfg.Redis.URL,
+	redis, err := redis.New(redisLog.WithContext(ctx), &redis.RedisConfig{
+		URL:          opts.RedisURL,
 		AttemptCount: 5,
 		AttemptDelay: 10 * time.Second,
-		Logger:       &redisLog,
 	})
 	if err != nil {
 		redisLog.Error().Err(err).Send()
 		return
 	}
-	redisLog.Info().Str("url", cfg.Redis.URL).Msg("started")
+	redisLog.Info().Str("url", opts.RedisURL).Msg("started")
 
 	defer func() {
 		// redis graceful shutdown
@@ -77,7 +83,7 @@ func Run(cfg *Config, opts *Options) {
 
 	// rabbit connection
 	rmqLog := logger.With().Str("module", "rmq").Logger()
-	rmqConn, queue, err := runRMQ(sigCtx, &rmqLog, cfg.RabbitMQ.URL, "query."+cfg.ID)
+	rmqConn, queue, err := runRMQ(rmqLog.WithContext(ctx), opts.RabbitURL, "query."+cfg.ID)
 	if err != nil {
 		rmqLog.Error().Err(err).Send()
 		return
@@ -88,27 +94,27 @@ func Run(cfg *Config, opts *Options) {
 	rmqProducer := producer.New(rmqConn)
 
 	// search consumer
-	if opts.SearchParser == nil {
+	if cfg.SearchParser == nil {
 		logger.Error().Msg("search parser is nil")
 		return
 	}
 
 	searchService := service.NewNews(service.NewsConfig{
 		Repo:   newsRepo,
-		Parser: opts.SearchParser,
+		Parser: cfg.SearchParser,
 
 		Producer:   rmqProducer,
 		Exchange:   "",
 		RoutingKey: "news",
 		AppID:      cfg.ID,
 	})
-	runSearcher(sigCtx, &logger, searchService, rmqConn, queue)
+	runSearcher(ctx, searchService, rmqConn, queue)
 
 	// archive worker
-	if opts.ArchiveParser != nil {
+	if cfg.ArchiveParser != nil {
 		archiveService := service.NewNews(service.NewsConfig{
 			Repo:   newsRepo,
-			Parser: opts.ArchiveParser,
+			Parser: cfg.ArchiveParser,
 
 			Producer:   rmqProducer,
 			Exchange:   "",
@@ -118,21 +124,21 @@ func Run(cfg *Config, opts *Options) {
 		pageService := service.NewPage(service.PageConfig{
 			Repo: pageRepo,
 		})
-		runArchiver(sigCtx, &logger, archiveService, pageService)
+		runArchiver(ctx, archiveService, pageService)
 	}
 
 	// feed worker
-	if opts.FeedParser != nil {
+	if cfg.FeedParser != nil {
 		feedService := service.NewNews(service.NewsConfig{
 			Repo:   newsRepo,
-			Parser: opts.FeedParser,
+			Parser: cfg.FeedParser,
 
 			Producer:   rmqProducer,
 			Exchange:   "",
 			RoutingKey: "news",
 			AppID:      cfg.ID,
 		})
-		runFeeder(sigCtx, &logger, feedService)
+		runFeeder(ctx, feedService)
 	}
 
 	// release worker
@@ -145,17 +151,17 @@ func Run(cfg *Config, opts *Options) {
 		RoutingKey: "news",
 		AppID:      cfg.ID,
 	})
-	runReleaser(sigCtx, &logger, releaseService)
+	runReleaser(ctx, releaseService)
 
 	wg.Wait()
 }
 
-func runRMQ(ctx context.Context, logger *zerolog.Logger, url string, queueName string) (*rabbitmq.Connection, string, error) {
+func runRMQ(ctx context.Context, url string, queueName string) (*rabbitmq.Connection, string, error) {
+	logger := zerolog.Ctx(ctx)
 	rmqConn, err := rabbitmq.New(ctx, &rabbitmq.Config{
 		URL:          url,
 		AttemptCount: 5,
 		AttemptDelay: 10 * time.Second,
-		Logger:       logger,
 	})
 	if err != nil {
 		return nil, "", fmt.Errorf("rabbitmq.New: %w", err)
@@ -171,7 +177,7 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, url string, queueName s
 		return nil, "", fmt.Errorf("rmqConn.Ch.QueueBind: %w", err)
 	}
 
-	go func() {
+	go func(ctx context.Context) {
 		wg.Add(1)
 		defer wg.Done()
 		<-ctx.Done()
@@ -184,18 +190,18 @@ func runRMQ(ctx context.Context, logger *zerolog.Logger, url string, queueName s
 			return
 		}
 		logger.Info().Msg("graceful shutdown")
-	}()
+	}(ctx)
 
 	return rmqConn, queue.Name, nil
 }
 
-func runSearcher(ctx context.Context, logger *zerolog.Logger, news service.News, conn *rabbitmq.Connection, queue string) {
-	log := logger.With().Str("module", "searcher").Logger()
+func runSearcher(ctx context.Context, news service.News, conn *rabbitmq.Connection, queue string) {
+	log := zerolog.Ctx(ctx).With().Str("module", "searcher").Logger()
 
 	amqpRouter := amqp.NewRouter(&log, news)
 	rmqConsumer := consumer.New(conn, amqpRouter, consumer.Ack(false))
 
-	go func() {
+	go func(ctx context.Context) {
 		wg.Add(1)
 		defer wg.Done()
 		for timer := time.NewTimer(0); ; timer.Reset(5 * time.Second) {
@@ -212,13 +218,15 @@ func runSearcher(ctx context.Context, logger *zerolog.Logger, news service.News,
 				log.Info().Msg("graceful shutdown")
 			}
 		}
-	}()
+	}(ctx)
 
 	log.Info().Msg("started")
 }
 
-func runWorker(ctx context.Context, logger *zerolog.Logger, worker worker.Worker) {
-	go func() {
+func runWorker(ctx context.Context, worker worker.Worker) {
+	logger := zerolog.Ctx(ctx)
+
+	go func(ctx context.Context) {
 		wg.Add(1)
 		defer wg.Done()
 		err := worker.Run(ctx)
@@ -227,28 +235,28 @@ func runWorker(ctx context.Context, logger *zerolog.Logger, worker worker.Worker
 			return
 		}
 		logger.Info().Msg("graceful shutdown")
-	}()
+	}(ctx)
 
 	logger.Info().Msg("started")
 }
 
-func runArchiver(ctx context.Context, logger *zerolog.Logger, news service.News, page service.Page) {
-	log := logger.With().Str("module", "archiver").Logger()
+func runArchiver(ctx context.Context, news service.News, page service.Page) {
+	log := zerolog.Ctx(ctx).With().Str("module", "archiver").Logger()
 	worker := worker.NewArchive(5*time.Second, &log, news, page)
 
-	runWorker(ctx, &log, worker)
+	runWorker(log.WithContext(ctx), worker)
 }
 
-func runReleaser(ctx context.Context, logger *zerolog.Logger, news service.News) {
-	log := logger.With().Str("module", "releaser").Logger()
+func runReleaser(ctx context.Context, news service.News) {
+	log := zerolog.Ctx(ctx).With().Str("module", "releaser").Logger()
 	worker := worker.NewRelease(10*time.Minute, &log, news)
 
-	runWorker(ctx, &log, worker)
+	runWorker(log.WithContext(ctx), worker)
 }
 
-func runFeeder(ctx context.Context, logger *zerolog.Logger, news service.News) {
-	log := logger.With().Str("module", "feeder").Logger()
+func runFeeder(ctx context.Context, news service.News) {
+	log := zerolog.Ctx(ctx).With().Str("module", "feeder").Logger()
 	worker := worker.NewFeed(15*time.Second, &log, news)
 
-	runWorker(ctx, &log, worker)
+	runWorker(log.WithContext(ctx), worker)
 }
