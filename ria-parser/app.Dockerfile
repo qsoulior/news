@@ -17,4 +17,4 @@ RUN CGO_ENABLED=0 GOOS=linux go build -v -o ../main ./cmd
 FROM ghcr.io/go-rod/rod:v0.115.0
 WORKDIR /app
 COPY --from=build /build/main ./
-CMD ["./main"]
+ENTRYPOINT ["./main"]

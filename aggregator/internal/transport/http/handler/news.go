@@ -13,7 +13,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-const MIN_COUNT = 50
+const MIN_COUNT = 30
 
 type news struct {
 	service service.News

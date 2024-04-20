@@ -31,9 +31,8 @@ function initParams() {
   searchText.value = getQueryStr(query, "q") ?? ""
   filter.tags = getQueryStrs(query, "tags[]")
   filter.sources = getQueryStrs(query, "sources[]")
-  filter.dateEnd = fromDateQuery(getQueryStr(query, "date_from"))
-  filter.dateStart = fromDateQuery(getQueryStr(query, "date_to"))
-  filter.dateEnd = getQueryInt(query, "date_end")
+  filter.dateStart = fromDateQuery(getQueryStr(query, "date_from"))
+  filter.dateEnd = fromDateQuery(getQueryStr(query, "date_to"))
 
   initSort()
 }
