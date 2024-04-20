@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/qsoulior/news/aggregator/internal/service"
 	"github.com/rs/zerolog"
 )
+
+const MIN_COUNT = 50
 
 type news struct {
 	service service.News
@@ -40,6 +43,14 @@ func (n *news) getInt(values url.Values, key string) (int, bool) {
 	}
 
 	return valueInt, true
+}
+
+func (n *news) isOutdated(news []entity.NewsHead) bool {
+	maxItem := slices.MaxFunc(news, func(a, b entity.NewsHead) int {
+		return a.PublishedAt.Compare(b.PublishedAt)
+	})
+
+	return time.Since(maxItem.PublishedAt) > 5*24*time.Hour
 }
 
 func (n *news) List(w http.ResponseWriter, r *http.Request) {
@@ -98,13 +109,6 @@ func (n *news) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(news) < 5 && query.Text != "" {
-		err := n.service.SendToParse(r.Context(), query.Text)
-		if err != nil {
-			logger.Error().Err(err).Send()
-		}
-	}
-
 	respData := &GetResponse{
 		Results:    news,
 		Skip:       opts.GetSkip(),
@@ -114,6 +118,20 @@ func (n *news) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	EncodeJSON(w, respData, http.StatusOK)
+
+	wantParse := query.Text != "" &&
+		(count < MIN_COUNT || (opts.GetSort() == 0 && opts.GetSkip() == 0 && n.isOutdated(news)))
+
+	if !wantParse {
+		return
+	}
+
+	err = n.service.SendToParse(r.Context(), query.Text)
+	if err != nil {
+		logger.Error().Err(err).Send()
+		return
+	}
+	logger.Info().Str("text", query.Text).Msg("message sent")
 }
 
 func (n *news) Get(w http.ResponseWriter, r *http.Request) {

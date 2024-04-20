@@ -15,6 +15,7 @@ services:
     build:
       context: ../
       dockerfile: ./newsdata-parser/app.Dockerfile
+    command: [ "-c", "configs/local.docker.dev.yml" ]
     depends_on:
       newsdata-cache:
         condition: service_healthy

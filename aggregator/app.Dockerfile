@@ -11,4 +11,4 @@ RUN CGO_ENABLED=0 GOOS=linux go build -v -o ./main ./cmd
 FROM alpine:3.19
 WORKDIR /app
 COPY --from=build /build/main ./
-CMD ["./main", "-c", "./configs/docker.dev.yml"]
+CMD ["./main"]

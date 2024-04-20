@@ -23,6 +23,7 @@ services:
     build:
       context: .
       dockerfile: app.Dockerfile
+    command: [ "-c", "configs/docker.dev.yml" ]
     ports:
       - 3000:3000
     depends_on:

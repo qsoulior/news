@@ -15,6 +15,7 @@ services:
     build:
       context: ../
       dockerfile: ./ria-parser/app.Dockerfile
+    command: [ "-c", "configs/docker.dev.yml" ]
     depends_on:
       ria-cache:
         condition: service_healthy

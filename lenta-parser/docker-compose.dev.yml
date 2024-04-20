@@ -15,6 +15,7 @@ services:
     build:
       context: ../
       dockerfile: ./lenta-parser/app.Dockerfile
+    command: [ "-c", "configs/docker.dev.yml" ]
     depends_on:
       lenta-cache:
         condition: service_healthy

@@ -15,6 +15,7 @@ services:
     build:
       context: ../
       dockerfile: ./iz-parser/app.Dockerfile
+    command: [ "-c", "configs/docker.dev.yml" ]
     depends_on:
       iz-cache:
         condition: service_healthy
