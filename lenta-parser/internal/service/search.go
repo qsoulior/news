@@ -63,7 +63,9 @@ func (n *newsSearch) parseURLs(ctx context.Context, query string, from string) (
 	u, _ := url.Parse(n.url + "/search/v2/process")
 	values := u.Query()
 	values.Set("query", query)
-	values.Set("from", from)
+	if from != "" {
+		values.Set("from", from)
+	}
 	values.Set("size", "100")
 	values.Set("sort", "2")
 	values.Set("domain", "1")
@@ -74,6 +76,7 @@ func (n *newsSearch) parseURLs(ctx context.Context, query string, from string) (
 	if err != nil {
 		return nil, fmt.Errorf("useragent.Desktop: %w", err)
 	}
+	n.logger.Debug().Msg(u.String())
 	resp, err := n.client.Get(ctx, u.String(), map[string]string{
 		"User-Agent": ua,
 	})

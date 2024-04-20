@@ -52,7 +52,9 @@ func (n *newsSearch) parseURLs(ctx context.Context, query string, from string) (
 	values.Set("text", query)
 	values.Set("sort", "0")
 	values.Set("type", "1")
-	values.Set("from", from)
+	if from != "" {
+		values.Set("from", from)
+	}
 	u.RawQuery = values.Encode()
 
 	ua, err := useragent.Desktop()
@@ -81,7 +83,8 @@ func (n *newsSearch) parseURLs(ctx context.Context, query string, from string) (
 		Find(".view-search__title a[href]").
 		Map(func(i int, s *goquery.Selection) string {
 			href, _ := s.Attr("href")
-			return href
+			u, _ := url.Parse(href)
+			return u.EscapedPath()
 		})
 
 	return urls, nil
