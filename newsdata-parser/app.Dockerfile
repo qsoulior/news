@@ -1,12 +1,16 @@
 FROM golang:1.22-alpine3.19 AS dependencies
 WORKDIR /dependencies
-COPY ./aggregator ./aggregator
+
+COPY ./aggregator/entity ./aggregator/entity
+COPY ./aggregator/pkg/rabbitmq ./aggregator/pkg/rabbitmq
+COPY ./aggregator/go.mod ./aggregator/go.sum ./aggregator/
 COPY ./parser ./parser
 COPY ./newsdata-parser/go.mod ./newsdata-parser/go.sum ./newsdata-parser/
+
 WORKDIR /dependencies/newsdata-parser
 RUN go mod download && go mod verify
 
-FROM dependencies AS build
+FROM golang:1.22-alpine3.19 AS build
 WORKDIR /build
 COPY ./newsdata-parser ./newsdata-parser
 COPY --from=dependencies /dependencies/aggregator ./aggregator
