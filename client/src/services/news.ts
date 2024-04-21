@@ -1,7 +1,7 @@
 import { News, NewsHead } from "@/entities/news"
 import type { NewsDTO, NewsHeadDTO } from "@/entities/news_dto"
 
-const baseURL = new URL("http://localhost:3000")
+const baseURL = new URL(import.meta.env.VITE_BACKEND_URL)
 const sources = new Map([
   ["ria", "РИА Новости"],
   ["iz", "Известия"],

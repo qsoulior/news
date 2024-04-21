@@ -4,6 +4,7 @@ include:
   - iz-parser/docker-compose.dev.yml
   - lenta-parser/docker-compose.dev.yml
   - ria-parser/docker-compose.dev.yml
+  - client/docker-compose.dev.yml
 
 services:
   rabbitmq:
