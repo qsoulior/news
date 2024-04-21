@@ -4,10 +4,12 @@ rabbitmq:
 redis:
   url: "redis://:test123@lenta-cache:6379"
 
-api:
+service:
   search:
     url: "https://lenta.ru"
   archive:
     url: "https://api.lenta.ru"
+    delay: "1s"
   feed:
     url: "https://lenta.ru"
+    delay: "1m"

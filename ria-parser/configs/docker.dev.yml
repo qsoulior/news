@@ -4,5 +4,7 @@ rabbitmq:
 redis:
   url: "redis://:test123@ria-cache:6379"
 
-api:
+service:
   url: "https://ria.ru"
+  feed_delay: "1m"
+  archive_delay: "1s"

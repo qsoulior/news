@@ -31,11 +31,34 @@ type Config struct {
 }
 
 type Options struct {
-	RabbitURL string
-	RedisURL  string
+	RabbitURL    string
+	RedisURL     string
+	ReleaseDelay *time.Duration
+	ArchiveDelay *time.Duration
+	FeedDelay    *time.Duration
+}
+
+var (
+	DefaultReleaseDelay = 15 * time.Minute
+	DefaultArchiveDelay = 5 * time.Second
+	DefaultFeedDelay    = 1 * time.Minute
+)
+
+func (o *Options) setDefault() {
+	if o.ReleaseDelay == nil {
+		o.ReleaseDelay = &DefaultReleaseDelay
+	}
+	if o.ArchiveDelay == nil {
+		o.ArchiveDelay = &DefaultArchiveDelay
+	}
+	if o.FeedDelay == nil {
+		o.FeedDelay = &DefaultFeedDelay
+	}
 }
 
 func Run(cfg *Config, opts *Options) {
+	opts.setDefault()
+
 	// notify context
 	sigCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
@@ -124,7 +147,7 @@ func Run(cfg *Config, opts *Options) {
 		pageService := service.NewPage(service.PageConfig{
 			Repo: pageRepo,
 		})
-		runArchiver(ctx, archiveService, pageService)
+		runArchiver(ctx, archiveService, pageService, *opts.ArchiveDelay)
 	}
 
 	// feed worker
@@ -138,7 +161,7 @@ func Run(cfg *Config, opts *Options) {
 			RoutingKey: "news",
 			AppID:      cfg.ID,
 		})
-		runFeeder(ctx, feedService)
+		runFeeder(ctx, feedService, *opts.FeedDelay)
 	}
 
 	// release worker
@@ -151,7 +174,7 @@ func Run(cfg *Config, opts *Options) {
 		RoutingKey: "news",
 		AppID:      cfg.ID,
 	})
-	runReleaser(ctx, releaseService)
+	runReleaser(ctx, releaseService, *opts.ReleaseDelay)
 
 	wg.Wait()
 }
@@ -245,23 +268,23 @@ func runWorker(ctx context.Context, worker worker.Worker) {
 	logger.Info().Msg("started")
 }
 
-func runArchiver(ctx context.Context, news service.News, page service.Page) {
+func runArchiver(ctx context.Context, news service.News, page service.Page, delay time.Duration) {
 	log := zerolog.Ctx(ctx).With().Str("module", "archiver").Logger()
-	worker := worker.NewArchive(5*time.Second, &log, news, page)
+	worker := worker.NewArchive(delay, &log, news, page)
 
 	runWorker(log.WithContext(ctx), worker)
 }
 
-func runReleaser(ctx context.Context, news service.News) {
+func runReleaser(ctx context.Context, news service.News, delay time.Duration) {
 	log := zerolog.Ctx(ctx).With().Str("module", "releaser").Logger()
-	worker := worker.NewRelease(10*time.Minute, &log, news)
+	worker := worker.NewRelease(delay, &log, news)
 
 	runWorker(log.WithContext(ctx), worker)
 }
 
-func runFeeder(ctx context.Context, news service.News) {
+func runFeeder(ctx context.Context, news service.News, delay time.Duration) {
 	log := zerolog.Ctx(ctx).With().Str("module", "feeder").Logger()
-	worker := worker.NewFeed(15*time.Second, &log, news)
+	worker := worker.NewFeed(delay, &log, news)
 
 	runWorker(log.WithContext(ctx), worker)
 }

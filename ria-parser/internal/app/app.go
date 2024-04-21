@@ -35,9 +35,9 @@ func Run(cfg *Config) {
 
 	client := httpclient.New()
 
-	searchParser := service.NewNewsSearch(appID, client, cfg.API.URL, browser, &logger)
-	archiveParser := service.NewNewsArchive(appID, client, cfg.API.URL, browser, &logger)
-	feedParser := service.NewNewsFeed(appID, client, cfg.API.URL, &logger)
+	searchParser := service.NewNewsSearch(appID, client, cfg.Service.URL, browser, &logger)
+	archiveParser := service.NewNewsArchive(appID, client, cfg.Service.URL, browser, &logger)
+	feedParser := service.NewNewsFeed(appID, client, cfg.Service.URL, &logger)
 
 	app.Run(
 		&app.Config{
@@ -48,8 +48,10 @@ func Run(cfg *Config) {
 			Logger:        &logger,
 		},
 		&app.Options{
-			RabbitURL: cfg.RabbitMQ.URL,
-			RedisURL:  cfg.Redis.URL,
+			RabbitURL:    cfg.RabbitMQ.URL,
+			RedisURL:     cfg.Redis.URL,
+			FeedDelay:    &cfg.Service.FeedDelay,
+			ArchiveDelay: &cfg.Service.ArchiveDelay,
 		},
 	)
 }

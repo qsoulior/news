@@ -10,11 +10,11 @@ func Run(cfg *Config) {
 	appID := "newsdata"
 
 	client := httpclient.New(
-		httpclient.URL(cfg.API.URL),
+		httpclient.URL(cfg.Service.URL),
 	)
 
-	searchParser := service.NewNews(appID, cfg.API.Search.AccessKey, client)
-	archiveParser := service.NewNews(appID, cfg.API.Archive.AccessKey, client)
+	searchParser := service.NewNews(appID, cfg.Service.Search.AccessKey, client)
+	archiveParser := service.NewNews(appID, cfg.Service.Archive.AccessKey, client)
 
 	app.Run(
 		&app.Config{
@@ -23,8 +23,9 @@ func Run(cfg *Config) {
 			ArchiveParser: archiveParser,
 		},
 		&app.Options{
-			RabbitURL: cfg.RabbitMQ.URL,
-			RedisURL:  cfg.Redis.URL,
+			RabbitURL:    cfg.RabbitMQ.URL,
+			RedisURL:     cfg.Redis.URL,
+			ArchiveDelay: &cfg.Service.Archive.Delay,
 		},
 	)
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -10,16 +11,17 @@ type (
 	Config struct {
 		RabbitMQ ConfigRabbitMQ `yaml:"rabbitmq"`
 		Redis    ConfigRedis    `yaml:"redis"`
-		API      ConfigAPI      `yaml:"api"`
+		Service  ConfigService  `yaml:"service"`
 	}
 
-	ConfigAPI struct {
+	ConfigService struct {
 		URL    string `yaml:"url"`
 		Search struct {
 			AccessKey string `yaml:"access_key"`
 		} `yaml:"search"`
 		Archive struct {
-			AccessKey string `yaml:"access_key"`
+			AccessKey string        `yaml:"access_key"`
+			Delay     time.Duration `yaml:"delay"`
 		} `yaml:"archive"`
 	}
 

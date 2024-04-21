@@ -18,7 +18,7 @@ func Run(cfg *Config) {
 	logger := zerolog.New(out).With().Timestamp().Logger()
 
 	client := httpclient.New(
-		httpclient.URL(cfg.API.URL),
+		httpclient.URL(cfg.Service.URL),
 	)
 
 	searchParser := service.NewNewsSearch(appID, client, &logger)
@@ -34,8 +34,10 @@ func Run(cfg *Config) {
 			Logger:        &logger,
 		},
 		&app.Options{
-			RabbitURL: cfg.RabbitMQ.URL,
-			RedisURL:  cfg.Redis.URL,
+			RabbitURL:    cfg.RabbitMQ.URL,
+			RedisURL:     cfg.Redis.URL,
+			FeedDelay:    &cfg.Service.FeedDelay,
+			ArchiveDelay: &cfg.Service.ArchiveDelay,
 		},
 	)
 }

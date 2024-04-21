@@ -4,9 +4,10 @@ rabbitmq:
 redis:
   url: "redis://:test123@newsdata-cache:6379"
 
-api:
+service:
   url: "https://newsdata.io/api/1"
   search:
     access_key: "pub_"
   archive:
     access_key: "pub_"
+    delay: "1s"

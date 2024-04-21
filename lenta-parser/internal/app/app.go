@@ -19,9 +19,9 @@ func Run(cfg *Config) {
 	logger := zerolog.New(out).With().Timestamp().Logger()
 
 	client := httpclient.New()
-	searchParser := service.NewNewsSearch(appID, cfg.API.Search.URL, client, &logger)
-	archiveParser := service.NewNewsArchive(appID, cfg.API.Archive.URL, client, &logger)
-	feedParser := service.NewNewsFeed(appID, cfg.API.Feed.URL, client, &logger)
+	searchParser := service.NewNewsSearch(appID, cfg.Service.Search.URL, client, &logger)
+	archiveParser := service.NewNewsArchive(appID, cfg.Service.Archive.URL, client, &logger)
+	feedParser := service.NewNewsFeed(appID, cfg.Service.Feed.URL, client, &logger)
 
 	app.Run(
 		&app.Config{
@@ -32,8 +32,10 @@ func Run(cfg *Config) {
 			Logger:        &logger,
 		},
 		&app.Options{
-			RabbitURL: cfg.RabbitMQ.URL,
-			RedisURL:  cfg.Redis.URL,
+			RabbitURL:    cfg.RabbitMQ.URL,
+			RedisURL:     cfg.Redis.URL,
+			FeedDelay:    &cfg.Service.Feed.Delay,
+			ArchiveDelay: &cfg.Service.Archive.Delay,
 		},
 	)
 }
