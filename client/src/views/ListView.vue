@@ -234,7 +234,7 @@ watch(sort, onUpdateSort)
         </n-button>
       </n-flex>
     </n-flex>
-    <n-divider v-if="count > 0 && !loading" class="list__divider_text"> {{ count }} новостей </n-divider>
+    <n-divider v-if="count > 0 && !loading" class="list__divider_text"> Новостей: {{ count }} </n-divider>
     <n-divider v-else class="list__divider_empty" />
     <ListContent :news="news" :loading="loading" :page="page" :page-count="pageCount" @update:page="onUpdatePage" />
   </n-flex>
