@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { NFlex, NButton, NSelect, NText, NDatePicker, type SelectOption } from "naive-ui"
-import { IconPlus } from "@/components/icons"
+import { NFlex, NButton, NSelect, NText, NDatePicker, NIcon, NButtonGroup, type SelectOption } from "naive-ui"
+import { IconPlus, IconReset, IconSubmit } from "@/components/icons"
 import { reactive } from "vue"
 
 interface Filter {
@@ -63,16 +63,16 @@ function reset() {
   <n-flex vertical>
     <n-flex justify="space-between">
       <n-select
+        class="filter__sources"
         v-model:value="filter.sources"
         :options="sourceOptions"
         multiple
         max-tag-count="responsive"
         placeholder="Источники"
-        style="max-width: 20em"
       />
-      <n-flex align="center">
-        <n-text>с</n-text>
+      <n-flex class="filter__dates" align="center" justify="space-between" :wrap="false">
         <n-date-picker
+          class="filter__date"
           v-model:value="filter.dateStart"
           clearable
           type="date"
@@ -80,10 +80,10 @@ function reset() {
           format="dd.MM.yyyy"
           :actions="null"
           :shortcuts="dateShortcuts"
-          style="max-width: 10em"
         />
-        <n-text>по</n-text>
+        <n-text>/</n-text>
         <n-date-picker
+          class="filter__date"
           v-model:value="filter.dateEnd"
           clearable
           type="date"
@@ -91,7 +91,6 @@ function reset() {
           format="dd.MM.yyyy"
           :actions="null"
           :shortcuts="dateShortcuts"
-          style="max-width: 10em"
         />
       </n-flex>
     </n-flex>
@@ -111,10 +110,48 @@ function reset() {
           <IconPlus />
         </template>
       </n-select>
-      <n-flex :wrap="false">
-        <n-button @click="reset">Сбросить</n-button>
-        <n-button @click="submit">Применить</n-button>
-      </n-flex>
+      <n-button-group>
+        <n-button @click="reset" title="Сбросить фильтры">
+          <template #icon>
+            <n-icon>
+              <IconReset />
+            </n-icon>
+          </template>
+        </n-button>
+        <n-button @click="submit" title="Применить фильтры">
+          <template #icon>
+            <n-icon>
+              <IconSubmit />
+            </n-icon>
+          </template>
+        </n-button>
+      </n-button-group>
     </n-flex>
   </n-flex>
 </template>
+
+<style scoped>
+.filter__sources {
+  width: 20em;
+  flex-grow: 1;
+}
+
+.filter__dates {
+  flex-grow: 1;
+}
+
+.filter__date {
+  width: 10em;
+  flex-grow: 1;
+}
+
+@media screen and (min-width: 768px) {
+  .filter__sources {
+    flex-grow: 0;
+  }
+
+  .filter__dates {
+    flex-grow: 0;
+  }
+}
+</style>

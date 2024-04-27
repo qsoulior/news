@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue"
+import { useMessage } from "naive-ui"
 import ItemContent from "@/components/ItemContent.vue"
 import ItemEmpty from "@/components/ItemEmpty.vue"
 import ItemSkeleton from "@/components/ItemSkeleton.vue"
@@ -15,10 +16,20 @@ const props = defineProps<Props>()
 const news = ref<News>()
 const loading = ref(false)
 
+const message = useMessage()
+
 async function loadNews(id: string) {
   loading.value = true
-  news.value = await getNews(id)
-  loading.value = false
+  try {
+    news.value = await getNews(id)
+  } catch (err) {
+    if (err instanceof Error) {
+      console.error(err)
+      message.error("Ошибка получения новости")
+    }
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {

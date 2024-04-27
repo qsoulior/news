@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue"
 import { useRoute, useRouter, type LocationQuery } from "vue-router"
-import { NFlex, NCollapseTransition, NButton, NIcon, NText, NDivider, useMessage } from "naive-ui"
+import { NFlex, NCollapseTransition, NButton, NIcon, NDivider, useMessage } from "naive-ui"
 import type { NewsHead } from "@/entities/news"
 import { IconFilter, IconFilterDismiss } from "@/components/icons"
 import ListSort from "@/components/ListSort.vue"
@@ -11,7 +11,7 @@ import ListContent from "@/components/ListContent.vue"
 import { getNewsHead, toDateString } from "@/services/news"
 import { getQueryStr, getQueryStrs, getQueryInt } from "@/router/query"
 
-const LIMIT = 10
+const LIMIT = 20
 const route = useRoute()
 const message = useMessage()
 
@@ -224,7 +224,6 @@ watch(sort, onUpdateSort)
     <n-flex align="center" justify="space-between">
       <ListSort v-model:value="sort" @update:value="onUpdateSort" />
       <n-flex align="center">
-        <n-text v-if="!loading">Результатов: {{ count }}</n-text>
         <n-button tertiary title="Показать фильтры" @click="isFilterShown = !isFilterShown">
           <template #icon>
             <n-icon>
@@ -235,7 +234,20 @@ watch(sort, onUpdateSort)
         </n-button>
       </n-flex>
     </n-flex>
-    <n-divider style="margin: 0" />
+    <n-divider v-if="count > 0 && !loading" class="list__divider_text"> {{ count }} новостей </n-divider>
+    <n-divider v-else class="list__divider_empty" />
     <ListContent :news="news" :loading="loading" :page="page" :page-count="pageCount" @update:page="onUpdatePage" />
   </n-flex>
 </template>
+
+<style scoped>
+.list__divider_text {
+  margin: 0;
+  font-size: inherit;
+}
+
+.list__divider_empty {
+  --dm: calc((1.4em - 1px) / 2);
+  margin: var(--dm) 0;
+}
+</style>

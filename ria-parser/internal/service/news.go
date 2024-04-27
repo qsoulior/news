@@ -69,7 +69,8 @@ func (n *news) parseOne(ctx context.Context, url string) (*entity.News, error) {
 		}
 	}
 
-	news.PublishedAt, err = time.Parse(datetimeLayout, datetimeStr)
+	loc, _ := time.LoadLocation("Europe/Moscow")
+	news.PublishedAt, err = time.ParseInLocation(datetimeLayout, datetimeStr, loc)
 	if err != nil {
 		return nil, fmt.Errorf("time.Parse: %w", err)
 	}

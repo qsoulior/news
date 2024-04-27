@@ -10,7 +10,9 @@ import IconOpen from "@/components/icons/IconOpen.vue"
 import IconPerson from "@/components/icons/IconPerson.vue"
 import IconPlus from "@/components/icons/IconPlus.vue"
 import IconQR from "@/components/icons/IconQR.vue"
+import IconReset from "@/components/icons/IconReset.vue"
 import IconSearch from "@/components/icons/IconSearch.vue"
+import IconSubmit from "@/components/icons/IconSubmit.vue"
 import IconSun from "@/components/icons/IconSun.vue"
 
 export {
@@ -26,6 +28,8 @@ export {
   IconPerson,
   IconPlus,
   IconQR,
+  IconReset,
   IconSearch,
+  IconSubmit,
   IconSun
 }
