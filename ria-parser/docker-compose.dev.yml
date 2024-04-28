@@ -1,5 +1,6 @@
 services:
   ria-cache:
+    restart: unless-stopped
     image: redis:7.2-alpine3.19
     ports:
       - 4004:6379
@@ -12,6 +13,7 @@ services:
       retries: 5
 
   ria-parser:
+    restart: unless-stopped
     build:
       context: ../
       dockerfile: ./ria-parser/app.Dockerfile

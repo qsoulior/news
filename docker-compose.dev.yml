@@ -8,6 +8,7 @@ include:
 
 services:
   rabbitmq:
+    restart: unless-stopped
     image: rabbitmq:3.12-management
     hostname: rabbitmq
     ports:
